@@ -1,7 +1,7 @@
-name: "Tom_Proteomics"
+name: Tom_Proteomics
 output_dir: ../docs
 navbar:
-  title: "Tom_Proteomics"
+  title: Tom_Proteomics
   left:
   - text: Home
     href: index.html
@@ -9,6 +9,10 @@ navbar:
     href: about.html
   - text: License
     href: license.html
+  right:
+  - icon: fa-github
+    text: Source code
+    href: https://github.com/nhihin/Tom_Proteomics
 output:
   workflowr::wflow_html:
     toc: yes
