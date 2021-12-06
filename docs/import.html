@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Nhi Hin" />
+
+<meta name="date" content="2021-05-07" />
+
+<title>Data import and cleaning</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Heart_Proteomics</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="import.html">Data import &amp; cleaning</a>
+</li>
+<li>
+  <a href="explore.html">Data exploration</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Data import and cleaning</h1>
+<h4 class="author">Nhi Hin</h4>
+<h4 class="date">2021-05-07</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2021-12-06
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>Tom_Proteomics/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version 1.6.2). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20210429code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20210429)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20210429code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20210429)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomnhihinTomProteomicstree452b6f24a3d1e447f51d0acb8a6001e7fd6ca6eatargetblank452b6f2a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/nhihin/Tom_Proteomics/tree/452b6f24a3d1e447f51d0acb8a6001e7fd6ca6ea" target="_blank">452b6f2</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomnhihinTomProteomicstree452b6f24a3d1e447f51d0acb8a6001e7fd6ca6eatargetblank452b6f2a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version <a href="https://github.com/nhihin/Tom_Proteomics/tree/452b6f24a3d1e447f51d0acb8a6001e7fd6ca6ea" target="_blank">452b6f2</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+
+Untracked files:
+    Untracked:  analysis/preprocessing.Rmd
+    Untracked:  data/27052020-TOTO-All-Clots-Sample-table.xls
+    Untracked:  data/First 70 clots data for SAHMRI.csv
+    Untracked:  data/First 70 clots data for SAHMRI.xlsx
+    Untracked:  data/dge.rds
+    Untracked:  data/modificationSpecificPeptides.txt
+    Untracked:  data/peptides.txt
+    Untracked:  data/proteinGroups.txt
+    Untracked:  output/abundant_protein_heatmap.pdf
+    Untracked:  output/variable_protein_heatmap.pdf
+
+Unstaged changes:
+    Modified:   analysis/_site.yml
+    Deleted:    analysis/about.Rmd
+    Deleted:    analysis/license.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the repository in which changes were made to the R Markdown (<code>analysis/import.Rmd</code>) and HTML (<code>docs/import.html</code>) files. If you’ve configured a remote Git repository (see <code>?wflow_git_remote</code>), click on the hyperlinks in the table below to view the files as they were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/nhihin/Tom_Proteomics/blob/452b6f24a3d1e447f51d0acb8a6001e7fd6ca6ea/analysis/import.Rmd" target="_blank">452b6f2</a>
+</td>
+<td>
+Nhi Hin
+</td>
+<td>
+2021-12-06
+</td>
+<td>
+wflow_publish(c(“analysis/index.Rmd”, “analysis/import.Rmd”,
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<ul>
+<li>In this RMarkdown, the protein quantification data and sample metadata are imported, and we do some data cleaning and filtering to prepare it for analysis.</li>
+</ul>
+<div id="protein-abundances" class="section level3">
+<h3>Protein Abundances</h3>
+<ul>
+<li>The protein quantification data is stored in the tab delimited text file <code>proteinGroups.txt</code> as specified below. The sample metadata table is in two Excel spreadsheets <code>27052020-TOTO-All-Clots-Sample-table.xls</code> and <code>First 70 clots data for SAHMRI.xlsx</code> (I converted this to a CSV for easier importing with <code>readr</code>). A copy of these files has been stored in the <code>data</code> directory and their paths are specified below.</li>
+</ul>
+<pre class="r"><code># Protein data location
+input &lt;- here(&quot;data&quot;,&quot;proteinGroups.txt&quot;)
+
+# Sample data location
+samples &lt;- here(&quot;data&quot;,&quot;27052020-TOTO-All-Clots-Sample-table.xls&quot;)
+samples2 &lt;- here(&quot;data&quot;, &quot;First 70 clots data for SAHMRI.xlsx&quot;)
+samples2_csv &lt;- here(&quot;data&quot;, &quot;First 70 clots data for SAHMRI.csv&quot;)</code></pre>
+<ul>
+<li>The protein quantification data is imported and relevant columns are retained as follows.</li>
+</ul>
+<pre class="r"><code># Protein quantification data:
+dat &lt;- readr::read_delim(input, delim = &quot;\t&quot;, col_names = TRUE)</code></pre>
+<pre><code>
+── Column specification ────────────────────────────────────────────────────────
+cols(
+  .default = col_double(),
+  `Protein IDs` = col_character(),
+  `Majority protein IDs` = col_character(),
+  `Peptide counts (all)` = col_character(),
+  `Peptide counts (razor+unique)` = col_character(),
+  `Peptide counts (unique)` = col_character(),
+  `Fasta headers` = col_character(),
+  `Sequence lengths` = col_character(),
+  `Identification type Batch1-Clot-1_Slot1-1_1_1715` = col_character(),
+  `Identification type Batch1-Clot-10_Slot1-8_1_1721` = col_character(),
+  `Identification type Batch1-Clot-11_Slot1-9_1_1708` = col_character(),
+  `Identification type Batch1-Clot-12_Slot1-10_1_1689` = col_character(),
+  `Identification type Batch1-Clot-16_Slot1-14_1_1694` = col_character(),
+  `Identification type Batch1-Clot-17_Slot1-15_1_1658` = col_character(),
+  `Identification type Batch1-Clot-18_Slot1-16_1_1688` = col_character(),
+  `Identification type Batch1-Clot-23_Slot1-21_1_1729` = col_character(),
+  `Identification type Batch1-Clot-24_Slot1-22_1_1679` = col_character(),
+  `Identification type Batch1-Clot-25_Slot1-23_1_1730` = col_character(),
+  `Identification type Batch1-Clot-26_Slot1-24_1_1686` = col_character(),
+  `Identification type Batch1-Clot-27_Slot1-25_1_1644` = col_character(),
+  `Identification type Batch1-Clot-28_Slot1-26_1_1652` = col_character()
+  # ... with 71 more columns
+)
+ℹ Use `spec()` for the full column specifications.</code></pre>
+<pre class="r"><code>cleanDat &lt;- dat %&gt;%
+  tibble::rownames_to_column(var = &quot;ProteinNum&quot;) %&gt;%
+  dplyr::mutate(ProteinNum = gsub(&quot;^&quot;, &quot;Protein_&quot;, ProteinNum)) %&gt;%
+  dplyr::select(ProteinNum, `Protein IDs`, `Majority protein IDs`, `Peptide counts (all)`, `Number of proteins`, `Peptides`, 
+                `Unique peptides`, `Sequence coverage [%]`, `Unique sequence coverage [%]`, `Mol. weight [kDa]`,
+                `Sequence length`, `Sequence lengths`, `Q-value`, Score, `Only identified by site`, Reverse, 
+                `Potential contaminant`, id, `Peptide IDs`, `Peptide is razor`, `Mod. peptide IDs`, 
+                `Evidence IDs`, `MS/MS IDs`, `Best MS/MS`, `Deamidation (NQ) site IDs`, `Oxidation (M) site IDs`, 
+                `Deamidation (NQ) site positions`, `Oxidation (M) site positions`, `Taxonomy IDs`, contains(&quot;LFQ&quot;))
+
+colnames(cleanDat) &lt;- gsub(&quot;^LFQ intensity (Batch[12]-.+)_Slot.+$&quot;, &quot;\\1&quot;, colnames(cleanDat))
+
+cleanDat</code></pre>
+<pre><code># A tibble: 1,314 x 99
+   ProteinNum `Protein IDs`  `Majority protei… `Peptide counts… `Number of prot…
+   &lt;chr&gt;      &lt;chr&gt;          &lt;chr&gt;             &lt;chr&gt;                       &lt;dbl&gt;
+ 1 Protein_1  CON__P00761    CON__P00761       2                               1
+ 2 Protein_2  CON__P01966    CON__P01966       10                              1
+ 3 Protein_3  CON__P02070;s… CON__P02070       7;2                             2
+ 4 Protein_4  CON__P02533;s… CON__P02533;sp|P… 16;16;7;6;6;6;5…               40
+ 5 Protein_5  CON__P02538;s… CON__P02538;sp|P… 12;12;11;11;10;…               19
+ 6 Protein_6  CON__P02672    CON__P02672       4                               1
+ 7 Protein_7  CON__P02676    CON__P02676       6                               1
+ 8 Protein_8  CON__P02768-1… CON__P02768-1;sp… 38;38;5                         3
+ 9 Protein_9  sp|P05787|K2C… sp|P05787|K2C8_H… 5;5;3;3;3;3;3;3…               10
+10 Protein_10 sp|P08779|K1C… sp|P08779|K1C16_… 14;14;5;5                       4
+# … with 1,304 more rows, and 94 more variables: Peptides &lt;dbl&gt;,
+#   Unique peptides &lt;dbl&gt;, Sequence coverage [%] &lt;dbl&gt;,
+#   Unique sequence coverage [%] &lt;dbl&gt;, Mol. weight [kDa] &lt;dbl&gt;,
+#   Sequence length &lt;dbl&gt;, Sequence lengths &lt;chr&gt;, Q-value &lt;dbl&gt;, Score &lt;dbl&gt;,
+#   Only identified by site &lt;chr&gt;, Reverse &lt;chr&gt;, Potential contaminant &lt;chr&gt;,
+#   id &lt;dbl&gt;, Peptide IDs &lt;chr&gt;, Peptide is razor &lt;chr&gt;,
+#   Mod. peptide IDs &lt;chr&gt;, Evidence IDs &lt;chr&gt;, MS/MS IDs &lt;chr&gt;,
+#   Best MS/MS &lt;chr&gt;, Deamidation (NQ) site IDs &lt;chr&gt;,
+#   Oxidation (M) site IDs &lt;chr&gt;, Deamidation (NQ) site positions &lt;chr&gt;,
+#   Oxidation (M) site positions &lt;chr&gt;, Taxonomy IDs &lt;chr&gt;,
+#   Batch1-Clot-1 &lt;dbl&gt;, Batch1-Clot-10 &lt;dbl&gt;, Batch1-Clot-11 &lt;dbl&gt;,
+#   Batch1-Clot-12 &lt;dbl&gt;, Batch1-Clot-16 &lt;dbl&gt;, Batch1-Clot-17 &lt;dbl&gt;,
+#   Batch1-Clot-18 &lt;dbl&gt;, Batch1-Clot-23 &lt;dbl&gt;, Batch1-Clot-24 &lt;dbl&gt;,
+#   Batch1-Clot-25 &lt;dbl&gt;, Batch1-Clot-26 &lt;dbl&gt;, Batch1-Clot-27 &lt;dbl&gt;,
+#   Batch1-Clot-28 &lt;dbl&gt;, Batch1-Clot-29 &lt;dbl&gt;, Batch1-Clot-3 &lt;dbl&gt;,
+#   Batch1-Clot-30 &lt;dbl&gt;, Batch1-Clot-31 &lt;dbl&gt;, Batch1-Clot-32 &lt;dbl&gt;,
+#   Batch1-Clot-33 &lt;dbl&gt;, Batch1-Clot-34 &lt;dbl&gt;, Batch1-Clot-35 &lt;dbl&gt;,
+#   Batch1-Clot-36 &lt;dbl&gt;, Batch1-Clot-4 &lt;dbl&gt;, Batch1-Clot-6 &lt;dbl&gt;,
+#   Batch1-Clot-9 &lt;dbl&gt;, Batch2-Clot-13 &lt;dbl&gt;, Batch2-Clot-14 &lt;dbl&gt;,
+#   Batch2-Clot-15 &lt;dbl&gt;, Batch2-Clot-19 &lt;dbl&gt;, Batch2-Clot-2 &lt;dbl&gt;,
+#   Batch2-Clot-20 &lt;dbl&gt;, Batch2-Clot-21 &lt;dbl&gt;, Batch2-Clot-22 &lt;dbl&gt;,
+#   Batch2-Clot-37 &lt;dbl&gt;, Batch2-Clot-38 &lt;dbl&gt;, Batch2-Clot-39 &lt;dbl&gt;,
+#   Batch2-Clot-40 &lt;dbl&gt;, Batch2-Clot-42 &lt;dbl&gt;, Batch2-Clot-43 &lt;dbl&gt;,
+#   Batch2-Clot-44 &lt;dbl&gt;, Batch2-Clot-45 &lt;dbl&gt;, Batch2-Clot-46 &lt;dbl&gt;,
+#   Batch2-Clot-47 &lt;dbl&gt;, Batch2-Clot-48 &lt;dbl&gt;, Batch2-Clot-5 &lt;dbl&gt;,
+#   Batch2-Clot-51 &lt;dbl&gt;, Batch2-Clot-52 &lt;dbl&gt;, Batch2-Clot-53 &lt;dbl&gt;,
+#   Batch2-Clot-54 &lt;dbl&gt;, Batch2-Clot-55 &lt;dbl&gt;, Batch2-Clot-56 &lt;dbl&gt;,
+#   Batch2-Clot-58 &lt;dbl&gt;, Batch2-Clot-59 &lt;dbl&gt;, Batch2-Clot-60 &lt;dbl&gt;,
+#   Batch2-Clot-61 &lt;dbl&gt;, Batch2-Clot-62 &lt;dbl&gt;, Batch2-Clot-63 &lt;dbl&gt;,
+#   Batch2-Clot-64 &lt;dbl&gt;, Batch2-Clot-65 &lt;dbl&gt;, Batch2-Clot-66 &lt;dbl&gt;,
+#   Batch2-Clot-68 &lt;dbl&gt;, Batch2-Clot-69 &lt;dbl&gt;, Batch2-Clot-70 &lt;dbl&gt;,
+#   Batch2-Clot-72 &lt;dbl&gt;, Batch2-Clot-74 &lt;dbl&gt;, Batch2-Clot-78 &lt;dbl&gt;,
+#   Batch2-Clot-83 &lt;dbl&gt;, Batch2-Clot-87 &lt;dbl&gt;, Batch2-Clot-88 &lt;dbl&gt;,
+#   Batch2-Clot-93 &lt;dbl&gt;</code></pre>
+<ul>
+<li>Because <code>cleanDat</code> contains both protein annotation info and protein quantification, we will split these into two separate data.frames so that the data processing is more straightforward later on.</li>
+</ul>
+<pre class="r"><code># Get protein quantification into an intensity matrix:
+mat &lt;- cleanDat %&gt;%
+  dplyr::select(starts_with(&quot;Batch&quot;)) %&gt;%
+  as.data.frame()
+
+rownames(mat) &lt;- gsub(&quot;^&quot;, &quot;Protein_&quot;, rownames(mat))
+
+dim(mat)</code></pre>
+<pre><code>[1] 1314   70</code></pre>
+</div>
+<div id="protein-annotation" class="section level3">
+<h3>Protein Annotation</h3>
+<ul>
+<li>The protein annotation info is extracted from <code>cleanDat</code> as follows:</li>
+</ul>
+<pre class="r"><code>proteins &lt;- cleanDat %&gt;%
+  as.data.frame %&gt;%
+  set_rownames(.$ProteinNum) %&gt;%
+  dplyr::select(-starts_with(&quot;Batch&quot;)) %&gt;%
+  set_colnames(gsub(x = colnames(.), pattern = &quot; &quot;, replacement = &quot;_&quot;)) %&gt;%
+  tidyr::separate_rows(Majority_protein_IDs, sep = &quot;;&quot;)
+
+head(proteins$Majority_protein_IDs, 20)</code></pre>
+<pre><code> [1] &quot;CON__P00761&quot;           &quot;CON__P01966&quot;           &quot;CON__P02070&quot;          
+ [4] &quot;CON__P02533&quot;           &quot;sp|P02533|K1C14_HUMAN&quot; &quot;CON__P02538&quot;          
+ [7] &quot;sp|P02538|K2C6A_HUMAN&quot; &quot;CON__P48668&quot;           &quot;sp|P48668|K2C6C_HUMAN&quot;
+[10] &quot;CON__P04259&quot;           &quot;CON__P02672&quot;           &quot;CON__P02676&quot;          
+[13] &quot;CON__P02768-1&quot;         &quot;sp|P02768|ALBU_HUMAN&quot;  &quot;sp|P05787|K2C8_HUMAN&quot; 
+[16] &quot;CON__P05787&quot;           &quot;CON__Q9DCV7&quot;           &quot;sp|P08729|K2C7_HUMAN&quot; 
+[19] &quot;CON__Q3KNV1&quot;           &quot;CON__P08729&quot;          </code></pre>
+<ul>
+<li><p>This gives 1513 proteins which have been quantified.</p></li>
+<li><p>However, the IDs of the proteins is not in an ideal format. There are proteins with human UniProt identifiers (e.g. <code>P02768</code> corresponding to the ALBU gene). Despite this, a number of other UniProt identifiers appear to be from other species including <em>Sus scrofa</em> and <em>Bos taurus</em>. I am not sure about the reasons for this, although it could be related to the homology mapping used in the initial pre-processing of the data (which I do not have any info about currently).</p></li>
+<li><p>Because of this, I am going to try to extract out all proteins that have clearly identifiable human UniProt IDs first. These appear to be defined in the dataset as proteins which end with <code>HUMAN</code> in the <code>Majority_protein_IDs</code> column. Then we will decide what to do with the other ones.</p></li>
+</ul>
+<pre class="r"><code># Retrieve list of human Uniprot identifiers
+entrez2Uniprot &lt;- org.Hs.egUNIPROT %&gt;% 
+  as.data.frame
+
+human_proteins &lt;- proteins %&gt;%
+  dplyr::filter(grepl(&quot;HUMAN&quot;,Majority_protein_IDs)) 
+nrow(human_proteins)</code></pre>
+<pre><code>[1] 1470</code></pre>
+<pre class="r"><code>other_proteins &lt;- proteins %&gt;%
+  dplyr::filter(!grepl(&quot;HUMAN&quot;,Majority_protein_IDs)) 
+nrow(other_proteins)</code></pre>
+<pre><code>[1] 43</code></pre>
+<ul>
+<li>It turns out that the vast majority of proteins in the dataset are human (1470 proteins) and only 43 proteins belong to other species. Because this is such a small amount (2.8420357% of the dataset), it seems reasonable to just filter those out of the dataset for now.</li>
+</ul>
+<pre class="r"><code>proteins %&lt;&gt;%
+  dplyr::filter(grepl(&quot;HUMAN&quot;,Majority_protein_IDs)) %&gt;% 
+  tidyr::separate(col = Majority_protein_IDs, into = c(&quot;sp&quot;, &quot;UniProt_ID&quot;, &quot;Gene&quot;), sep = &quot;\\|&quot;) %&gt;% 
+  dplyr::mutate(Gene = gsub(x = Gene, pattern = &quot;_HUMAN&quot;, replacement = &quot;&quot;)) %&gt;% 
+  as.data.frame %&gt;%
+  dplyr::distinct(UniProt_ID, .keep_all = TRUE) %&gt;%
+  set_rownames(.$UniProt_ID)
+  #tidyr::separate_rows(Protein_IDs, sep = &quot;;&quot;) %&gt;% View
+
+# proteins %&lt;&gt;%
+#   dplyr::filter(grepl(&quot;HUMAN&quot;,Majority_protein_IDs)) %&gt;%
+#   tidyr::separate_rows(Majority_protein_IDs, sep = &quot;\\|&quot;) %&gt;% 
+#   dplyr::filter(!grepl(&quot;HUMAN&quot;,Majority_protein_IDs),
+#                 !grepl(&quot;sp&quot;, Majority_protein_IDs)) %&gt;%
+#   dplyr::distinct(Majority_protein_IDs,.keep_all=TRUE) %&gt;%
+#   as.data.frame %&gt;%
+#   set_rownames(.$Majority_protein_IDs)
+
+nrow(proteins)</code></pre>
+<pre><code>[1] 1466</code></pre>
+<ul>
+<li>Because we have done a small amount of filtering on these protein IDs, we need to ensure that the protein intensity matrix contains the same proteins.</li>
+</ul>
+<pre class="r"><code>mat %&lt;&gt;% as.data.frame %&gt;%
+  rownames_to_column(&quot;ProteinNum&quot;) %&gt;%
+  left_join(proteins[, c(&quot;ProteinNum&quot;, &quot;UniProt_ID&quot;)]) %&gt;%
+  dplyr::filter(!is.na(UniProt_ID)) %&gt;%
+  dplyr::select(-ProteinNum) %&gt;%
+  column_to_rownames(&quot;UniProt_ID&quot;) </code></pre>
+<pre><code>Joining, by = &quot;ProteinNum&quot;</code></pre>
+<pre class="r"><code># Quick sanity check: OK.
+table(rownames(mat) == rownames(proteins))</code></pre>
+<pre><code>
+TRUE 
+1466 </code></pre>
+</div>
+<div id="sample-metadata" class="section level3">
+<h3>Sample Metadata</h3>
+<ul>
+<li>We then import the sample metadata tables and consolidate them into a single data.frame.</li>
+</ul>
+<pre class="r"><code># Sample metadata import
+sampleInfo &lt;- readxl::read_xls(samples) %&gt;%
+  as.data.frame() %&gt;% 
+  tibble::rownames_to_column(var = &quot;order&quot;) %&gt;%
+  dplyr::select(order, Vial, `Sample ID`) %&gt;%
+  dplyr::mutate(`Sample ID` = gsub(&quot;^TOTO-&quot;, &quot;&quot;, `Sample ID`)) %&gt;%
+  dplyr::mutate(Sample = gsub(x = `Sample ID`, pattern = &quot;^Batch[[:digit:]]-Clot-([[:digit:]]{1,2})&quot;, replacement = &quot;\\1&quot;)) %&gt;%
+  dplyr::mutate(Sample = case_when(!Sample %in% 1:100 ~ &quot;remove&quot;,
+                                   TRUE ~ Sample)) %&gt;%
+  dplyr::filter(!Sample == &quot;remove&quot;)
+
+# Consolidate sample metadata into 1 data.frame
+sampleMetadata &lt;- readr::read_csv(samples2_csv) %&gt;%
+  as.data.frame %&gt;%
+  set_colnames(gsub(x = colnames(.), pattern = &quot; &quot;, replacement = &quot;_&quot;)) %&gt;%
+  set_colnames(gsub(x = colnames(.), pattern = &quot;-|/|\\?&quot;, replacement = &quot;&quot;)) %&gt;%
+  dplyr::rename(Sample = Clot_No) %&gt;%
+  dplyr::mutate(Sample = as.character(Sample)) %&gt;%
+  left_join(sampleInfo, by = &quot;Sample&quot;)</code></pre>
+<pre><code>
+── Column specification ────────────────────────────────────────────────────────
+cols(
+  .default = col_double(),
+  Notes = col_character(),
+  DOB = col_character(),
+  Sex = col_character(),
+  `Onset Date` = col_character(),
+  `Onset Time` = col_time(format = &quot;&quot;),
+  `Time Last Seen Well` = col_time(format = &quot;&quot;),
+  `Arrival Date` = col_character(),
+  `Arrival Time` = col_time(format = &quot;&quot;),
+  Mechanism = col_character(),
+  `Occlusion sites` = col_character(),
+  ECG = col_character(),
+  `Lysis Type` = col_character(),
+  `Thrombolytic Dose or reason not thrombolysed` = col_character(),
+  `Lysis Time` = col_character(),
+  `First Run` = col_time(format = &quot;&quot;),
+  Anaesthetic = col_character(),
+  `Recanalisation Time` = col_character(),
+  `IA device and number of passes` = col_character(),
+  `IA secondary device and no of passes` = col_character(),
+  Complications = col_character()
+  # ... with 2 more columns
+)
+ℹ Use `spec()` for the full column specifications.</code></pre>
+<pre class="r"><code># few extra modifications to the metadata
+sampleMetadata %&lt;&gt;%
+  dplyr::mutate(Onset_Year = gsub(x = as.character(Onset_Date),
+                                  pattern = &quot;^(.*)\\/(18|19)$&quot;, 
+                                  replacement = &quot;\\2&quot;)) %&gt;%
+  dplyr::mutate(Sex = as.factor(Sex),
+                Mechanism_Code = as.factor(Mechanism_Code),
+                LAA = as.factor(LAA),
+                CAembolism = as.factor(CAembolism),
+                SV_occlusion = as.factor(SV_occlusion),
+                Other_Uncommon = as.factor(Other_Uncommon),
+                Unknown_Incomplete = as.factor(Unknown_Incomplete),
+                Athero = as.factor(Athero),
+                Smoking = as.factor(Smoking),
+                HTN = as.factor(HTN),
+                AF = as.factor(AF),
+                Hyperlipidaemia = as.factor(Hyperlipidaemia),
+                Diabetes = as.factor(Diabetes),
+                Prev_dx_of_stroke = as.factor(Prev_dx_of_stroke),
+                Prev_dx_of_TIA = as.factor(Prev_dx_of_TIA),
+                CHF = as.factor(CHF),
+                IHD = as.factor(IHD),
+                Aspirin = as.factor(Aspirin),
+                Clopidogrel = as.factor(Clopidogrel),
+                Dipyridamole = as.factor(Dipyridamole),
+                Warfarin = as.factor(Warfarin),
+                Other_antithrombotic = as.factor(Other_antithrombotic),
+                Statin = as.factor(Statin),
+                Suspended_Anticoagulant = as.factor(Suspended_Anticoagulant),
+                mRS = as.factor(mRS),
+                Thrombolysis = as.factor(Thrombolysis),
+                Haemorrhage = as.factor(Haemorrhage),
+                Type_of_Haemorrhage = as.factor(Type_of_Haemorrhage)
+                )</code></pre>
+</div>
+<div id="quick-exploration" class="section level3">
+<h3>Quick Exploration</h3>
+<pre class="r"><code>sampleMetadata %&gt;% 
+  ggplot(aes(x = Sex, fill = Mechanism_Code)) +
+  geom_bar() +
+  labs(y = &quot;Count&quot;) +
+  ggtitle(&quot;Types of blood clots by sex&quot;)</code></pre>
+<p><img src="figure/import.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>sampleMetadata %&gt;% 
+  ggplot(aes(x = Age, fill = Mechanism_Code)) +
+  geom_histogram(bins = 20, alpha=0.6) +
+  facet_wrap(~Mechanism_Code)  +
+  ggtitle(&quot;Age distributions of different types of blood clots&quot;)</code></pre>
+<p><img src="figure/import.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>sampleMetadata %&gt;% 
+  ggplot(aes(y = Age, x=Sex, fill = Sex)) +
+  geom_boxplot() +
+  #geom_histogram(bins = 25, alpha=0.6) +
+  ggtitle(&quot;Age distributions of male and female patients&quot;)</code></pre>
+<p><img src="figure/import.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="data-normalisation" class="section level2">
+<h2>Data Normalisation</h2>
+<ul>
+<li><p>To simplify working with the data, including normalisation, filtering, etc we will store all the data in a <code>DGEList</code> (digital gene expression) object. This object is designed for gene expression data originally, but it works well for proteomics datasets as well and provides helpful functions for normalisation, filtering, etc.</p></li>
+<li><p>In previous work, I have found the Cyclic Loess method to work well for normalising proteomics data. The method also performed well in a recent comparison of normalisation methods for both TMT and label-free proteomics (<a href="https://pubs.acs.org/doi/10.1021/acsomega.0c02564">Graw et al. 2020</a>).</p></li>
+<li><p>Cyclic Loess is implemented in <em>limma</em>, so we can perform the normalisation as follows. Prior to normalisation, I also removed all proteins that had zero abundance across all samples, corresponding to 89 proteins removed.</p></li>
+</ul>
+<pre class="r"><code>dge &lt;- DGEList(counts = mat,
+               genes = proteins,
+               samples = sampleMetadata, 
+               remove.zeros = TRUE) %&gt;%
+  calcNormFactors() #Calculate &quot;library size&quot; or total protein abundance for each sample</code></pre>
+<pre><code>Removing 89 rows with all zero counts</code></pre>
+<pre class="r"><code># Normalise data and store this in the $norm slot of the DGEList
+dge$norm &lt;- dge$counts %&gt;%
+  add(0.25) %&gt;% # Offset to prevent Inf from showing up when we apply log2
+  log2 %&gt;%
+  limma::normalizeBetweenArrays(method = &quot;cyclicloess&quot;, 
+                                cyclic.method = &quot;fast&quot;) </code></pre>
+<div id="boxplot-comparison" class="section level3">
+<h3>Boxplot comparison</h3>
+<ul>
+<li>A comparison of before and after normalisation is shown below. We can see that after the Cyclic Loess normalisation, the distributions of protein intensities across each sample are more comparable to each other, although there is still quite a bit of variation in several samples.</li>
+</ul>
+<pre class="r"><code>dge$counts %&gt;%
+  add(0.25) %&gt;%
+  log2 %&gt;%
+  melt() %&gt;% 
+  set_colnames(c(&quot;uniProtID&quot;, &quot;Sample&quot;, &quot;log2_intensity&quot;)) %&gt;%
+  ggplot(aes(x = Sample, y = log2_intensity, fill = Sample)) +
+  geom_boxplot(show.legend = FALSE) +
+  ggtitle(&quot;Raw log2 intensities&quot;)</code></pre>
+<p><img src="figure/import.Rmd/unnamed-chunk-14-1.png" width="1056" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>dge$norm %&gt;% 
+  melt() %&gt;% 
+  set_colnames(c(&quot;uniProtID&quot;, &quot;Sample&quot;, &quot;log2_intensity&quot;)) %&gt;%
+  ggplot(aes(x = Sample, y = log2_intensity, fill = Sample)) +
+  geom_boxplot(show.legend = FALSE) +
+  ggtitle(&quot;After Cyclic Loess Normalisation&quot;)</code></pre>
+<p><img src="figure/import.Rmd/unnamed-chunk-14-2.png" width="1056" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="filtering" class="section level2">
+<h2>Filtering</h2>
+<ul>
+<li>From the boxplots above, there are a number of proteins that appear to have very low abundance (log2 intensity &lt; 0). It is also worth doing a small amount of filtering based on the normalised protein abundances.</li>
+</ul>
+<pre class="r"><code># Arbitrary cutoff to remove low abundance proteins
+keepTheseProteins &lt;- (rowSums((dge$counts) &gt; 0.5) &gt;= 3) 
+
+A &lt;- dge$counts %&gt;% 
+  add(0.25) %&gt;%
+  log2 %&gt;%
+  melt %&gt;% 
+  dplyr::filter(is.finite(value)) %&gt;% 
+  ggplot(aes(x = value, colour = Var2)) +
+  geom_density() + 
+  guides(colour = FALSE) +
+  ggtitle(&quot;A. Before filtering&quot;) +
+  labs(x = &quot;logCPM&quot;, y = &quot;Density&quot;)
+
+B &lt;- dge$norm %&gt;% 
+  magrittr::extract(keepTheseProteins,) %&gt;%
+  melt %&gt;% 
+  dplyr::filter(is.finite(value)) %&gt;% 
+  ggplot(aes(x = value, colour = Var2)) +
+  geom_density() + 
+  guides(colour = FALSE) +
+  ggtitle(&quot;B. After filtering&quot;)+
+  labs(x = &quot;logCPM&quot;, y = &quot;Density&quot;)
+
+
+grid.newpage()
+vp1 &lt;- viewport(x = 0, y = 0, width = 0.5, height = 1, just = c(0, 0))
+vp2 &lt;- viewport(x = 0.5, y = 0, width = 0.5, height = 1, just = c(0,0))
+print(A, vp = vp1)
+print(B, vp  = vp2)</code></pre>
+<p><img src="figure/import.Rmd/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>dge &lt;- dge[keepTheseProteins,,keep.lib.sizes = FALSE] </code></pre>
+</div>
+<div id="save-r-objects" class="section level2">
+<h2>Save R Objects</h2>
+<ul>
+<li>Now that the data is in a suitable format for analysis, we will save it out as an R object to be imported in the next step of the analysis, <a href="explore.html">basic data exploration</a>.</li>
+</ul>
+<pre class="r"><code>dge %&gt;% saveRDS(here(&quot;data&quot;, &quot;dge.rds&quot;))</code></pre>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.0.3 (2020-10-10)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Mojave 10.14.6
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+
+attached base packages:
+ [1] grid      parallel  stats4    stats     graphics  grDevices utils    
+ [8] datasets  methods   base     
+
+other attached packages:
+ [1] umap_0.2.7.0         pheatmap_1.0.12      cowplot_1.1.0       
+ [4] mlbench_2.1-3        caret_6.0-86         lattice_0.20-41     
+ [7] org.Hs.eg.db_3.12.0  AnnotationDbi_1.52.0 IRanges_2.24.0      
+[10] S4Vectors_0.28.0     Biobase_2.50.0       BiocGenerics_0.36.0 
+[13] edgeR_3.32.0         limma_3.46.0         readr_1.4.0         
+[16] tidyr_1.1.3          tibble_3.1.1         reshape2_1.4.4      
+[19] ggplot2_3.3.3        dplyr_1.0.5          magrittr_2.0.1      
+[22] here_1.0.0           workflowr_1.6.2     
+
+loaded via a namespace (and not attached):
+ [1] nlme_3.1-149         fs_1.5.0             lubridate_1.7.10    
+ [4] bit64_4.0.5          RColorBrewer_1.1-2   rprojroot_2.0.2     
+ [7] tools_4.0.3          bslib_0.2.4          utf8_1.1.4          
+[10] R6_2.5.0             rpart_4.1-15         DBI_1.1.0           
+[13] colorspace_2.0-0     nnet_7.3-14          withr_2.3.0         
+[16] tidyselect_1.1.0     bit_4.0.4            compiler_4.0.3      
+[19] git2r_0.27.1         cli_3.0.1            labeling_0.4.2      
+[22] sass_0.3.1           scales_1.1.1         askpass_1.1         
+[25] stringr_1.4.0        digest_0.6.27        rmarkdown_2.8       
+[28] pkgconfig_2.0.3      htmltools_0.5.1.1    readxl_1.3.1        
+[31] rlang_0.4.10         rstudioapi_0.13      RSQLite_2.2.1       
+[34] farver_2.0.3         jquerylib_0.1.3      generics_0.1.0      
+[37] jsonlite_1.7.2       ModelMetrics_1.2.2.2 Matrix_1.2-18       
+[40] Rcpp_1.0.5           munsell_0.5.0        fansi_0.4.1         
+[43] reticulate_1.18      lifecycle_1.0.0      stringi_1.5.3       
+[46] whisker_0.4          pROC_1.16.2          yaml_2.2.1          
+[49] MASS_7.3-53          plyr_1.8.6           recipes_0.1.15      
+[52] blob_1.2.1           promises_1.1.1       crayon_1.4.1        
+[55] splines_4.0.3        hms_1.0.0            locfit_1.5-9.4      
+[58] knitr_1.30           pillar_1.6.0         codetools_0.2-16    
+[61] glue_1.4.2           evaluate_0.14        data.table_1.13.2   
+[64] vctrs_0.3.7          httpuv_1.5.4         foreach_1.5.1       
+[67] cellranger_1.1.0     openssl_1.4.3        gtable_0.3.0        
+[70] purrr_0.3.4          assertthat_0.2.1     xfun_0.23           
+[73] gower_0.2.2          prodlim_2019.11.13   RSpectra_0.16-0     
+[76] later_1.1.0.1        class_7.3-17         survival_3.2-7      
+[79] timeDate_3043.102    iterators_1.0.13     memoise_1.1.0       
+[82] lava_1.6.8.1         ellipsis_0.3.1       ipred_0.9-9         </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Nhi Hin" />
+
+<meta name="date" content="2021-12-06" />
+
+<title>Basic data exploration</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Heart_Proteomics</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="import.html">Data import &amp; cleaning</a>
+</li>
+<li>
+  <a href="explore.html">Data exploration</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Basic data exploration</h1>
+<h4 class="author">Nhi Hin</h4>
+<h4 class="date">2021-12-06</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2021-12-06
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>Tom_Proteomics/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version 1.6.2). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20210429code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20210429)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20210429code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20210429)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomnhihinTomProteomicstree452b6f24a3d1e447f51d0acb8a6001e7fd6ca6eatargetblank452b6f2a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/nhihin/Tom_Proteomics/tree/452b6f24a3d1e447f51d0acb8a6001e7fd6ca6ea" target="_blank">452b6f2</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomnhihinTomProteomicstree452b6f24a3d1e447f51d0acb8a6001e7fd6ca6eatargetblank452b6f2a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version <a href="https://github.com/nhihin/Tom_Proteomics/tree/452b6f24a3d1e447f51d0acb8a6001e7fd6ca6ea" target="_blank">452b6f2</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+
+Untracked files:
+    Untracked:  analysis/preprocessing.Rmd
+    Untracked:  data/27052020-TOTO-All-Clots-Sample-table.xls
+    Untracked:  data/First 70 clots data for SAHMRI.csv
+    Untracked:  data/First 70 clots data for SAHMRI.xlsx
+    Untracked:  data/dge.rds
+    Untracked:  data/modificationSpecificPeptides.txt
+    Untracked:  data/peptides.txt
+    Untracked:  data/proteinGroups.txt
+    Untracked:  output/abundant_protein_heatmap.pdf
+    Untracked:  output/variable_protein_heatmap.pdf
+
+Unstaged changes:
+    Modified:   analysis/_site.yml
+    Deleted:    analysis/about.Rmd
+    Deleted:    analysis/license.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the repository in which changes were made to the R Markdown (<code>analysis/explore.Rmd</code>) and HTML (<code>docs/explore.html</code>) files. If you’ve configured a remote Git repository (see <code>?wflow_git_remote</code>), click on the hyperlinks in the table below to view the files as they were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/nhihin/Tom_Proteomics/blob/452b6f24a3d1e447f51d0acb8a6001e7fd6ca6ea/analysis/explore.Rmd" target="_blank">452b6f2</a>
+</td>
+<td>
+Nhi Hin
+</td>
+<td>
+2021-12-06
+</td>
+<td>
+wflow_publish(c(“analysis/index.Rmd”, “analysis/import.Rmd”,
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<ul>
+<li><p>In this RMarkdown, some basic data exploration is done, namely:</p>
+<ul>
+<li><strong>Dimension reduction using Principal Component Analysis (PCA and UMAP)</strong> to look at similarity between samples in terms of their overall protein abundances. This is required as the protein abundance data is high dimensional (&gt;1,000 features but only 70 samples).</li>
+<li><strong>Correlation between metadata variables</strong>: There are ~30 metadata variables and it is unknown whether they are correlated to each other or not. Spearman correlation was used to show that there were several significant correlations.<br />
+</li>
+<li><strong>Feature importance</strong> indicates that the vast majority of metadata variables do not appear to significantly contribute to explaining protein abundances, except for age and total_protein_abundance. Sex, Aspirin, Smoking, Statin, Diabetes contribute a small amount to explaining the protein abundances seen.</li>
+</ul></li>
+<li><p>Unfortunately, the story that the data tells us is that the majority of variation seen in protein abundances between samples cannot be explained by the vast majority of the metadata variables that were measured for the samples. I discuss some limitations of the data later and possible ways to we may be able to remedy this.</p></li>
+</ul>
+</div>
+<div id="import-in-processedfiltered-data" class="section level2">
+<h2>Import in processed/filtered data</h2>
+<ul>
+<li><p>The data was previously cleaned (see <a href="import.html">data import and cleaning</a>).</p></li>
+<li><p>Below we import in the saved R object containing all sample metadata and protein abundances:</p></li>
+</ul>
+<pre class="r"><code>dge &lt;- readRDS(here(&quot;data&quot;, &quot;dge.rds&quot;))</code></pre>
+<div id="dimension-reduction" class="section level3">
+<h3>Dimension Reduction</h3>
+<div id="pca" class="section level4">
+<h4>PCA</h4>
+<ul>
+<li><p>Principal Component Analysis (PCA) is a dimension reduction technique. Here we use it to “reduce the dimensions” of the &gt;1,500 protein abundances for the 70 samples such that each sample has a smaller number of Principal Components (PCs), that summarise their protein abundances. These PCs can be plotted and we can interpret the distance between samples as indicating how overall similar they are to each other based on their protein abundances.</p></li>
+<li><p>Here we calculate the PCs for the data before and after normalisation:</p></li>
+</ul>
+<pre class="r"><code>pc_analysis_raw &lt;- dge$counts %&gt;% add(0.25) %&gt;% log2 %&gt;% t %&gt;% prcomp()
+pc_analysis_norm &lt;- dge$norm %&gt;% t %&gt;% prcomp()</code></pre>
+<ul>
+<li>The summaries below indicate that the majority of variation in the data is captured in the first principal component, especially for the raw data (~40% of variation in the data). However, after normalisation, we can see that the first principal component only captures around 12% of the variation, indicating that it is likely that technical differences in size of data between samples or other technical factors affecting the distributions of the samples has been mitigated through normalisation. After normalisation, the samples are generally appearing more “similar”.</li>
+</ul>
+<pre class="r"><code>summary(pc_analysis_raw)</code></pre>
+<pre><code>Importance of components:
+                           PC1      PC2      PC3      PC4      PC5     PC6
+Standard deviation     153.250 60.03251 55.19445 43.62366 40.21110 31.9439
+Proportion of Variance   0.442  0.06782  0.05733  0.03581  0.03043  0.0192
+Cumulative Proportion    0.442  0.50981  0.56714  0.60296  0.63339  0.6526
+                            PC7      PC8      PC9     PC10     PC11     PC12
+Standard deviation     28.91643 28.50807 27.54763 25.75315 24.93959 24.04106
+Proportion of Variance  0.01574  0.01529  0.01428  0.01248  0.01171  0.01088
+Cumulative Proportion   0.66833  0.68362  0.69790  0.71038  0.72209  0.73297
+                           PC13     PC14     PC15    PC16     PC17     PC18
+Standard deviation     23.90545 22.76182 21.94275 21.6181 21.21363 20.70567
+Proportion of Variance  0.01075  0.00975  0.00906  0.0088  0.00847  0.00807
+Cumulative Proportion   0.74372  0.75347  0.76253  0.7713  0.77980  0.78787
+                           PC19     PC20     PC21     PC22     PC23     PC24
+Standard deviation     20.55543 20.07619 19.74524 19.32713 19.19295 19.12902
+Proportion of Variance  0.00795  0.00759  0.00734  0.00703  0.00693  0.00689
+Cumulative Proportion   0.79582  0.80340  0.81074  0.81777  0.82470  0.83159
+                           PC25     PC26     PC27     PC28     PC29     PC30
+Standard deviation     18.53958 18.32317 18.02015 17.67377 17.61438 17.42525
+Proportion of Variance  0.00647  0.00632  0.00611  0.00588  0.00584  0.00571
+Cumulative Proportion   0.83806  0.84437  0.85049  0.85636  0.86220  0.86792
+                           PC31     PC32     PC33     PC34     PC35     PC36
+Standard deviation     17.29276 16.91736 16.76083 16.49576 16.43717 16.23776
+Proportion of Variance  0.00563  0.00539  0.00529  0.00512  0.00508  0.00496
+Cumulative Proportion   0.87355  0.87893  0.88422  0.88934  0.89442  0.89939
+                           PC37     PC38     PC39     PC40    PC41     PC42
+Standard deviation     16.07188 15.90043 15.76427 15.54535 15.4565 15.17614
+Proportion of Variance  0.00486  0.00476  0.00468  0.00455  0.0045  0.00433
+Cumulative Proportion   0.90425  0.90901  0.91368  0.91823  0.9227  0.92706
+                           PC43     PC44     PC45     PC46     PC47     PC48
+Standard deviation     14.89680 14.71821 14.56148 14.26886 14.12611 13.89746
+Proportion of Variance  0.00418  0.00408  0.00399  0.00383  0.00376  0.00363
+Cumulative Proportion   0.93124  0.93531  0.93930  0.94314  0.94689  0.95053
+                           PC49     PC50     PC51     PC52     PC53     PC54
+Standard deviation     13.68160 13.46773 13.28886 13.05494 12.98460 12.71160
+Proportion of Variance  0.00352  0.00341  0.00332  0.00321  0.00317  0.00304
+Cumulative Proportion   0.95405  0.95746  0.96079  0.96399  0.96717  0.97021
+                           PC55     PC56     PC57     PC58     PC59     PC60
+Standard deviation     12.60801 12.28512 11.95647 11.46623 11.07594 10.88916
+Proportion of Variance  0.00299  0.00284  0.00269  0.00247  0.00231  0.00223
+Cumulative Proportion   0.97320  0.97604  0.97873  0.98120  0.98351  0.98574
+                           PC61     PC62     PC63    PC64    PC65    PC66
+Standard deviation     10.63077 10.46853 10.09703 9.82116 9.59312 9.30534
+Proportion of Variance  0.00213  0.00206  0.00192 0.00182 0.00173 0.00163
+Cumulative Proportion   0.98787  0.98993  0.99185 0.99367 0.99540 0.99703
+                          PC67    PC68    PC69      PC70
+Standard deviation     7.91697 7.70753 5.98760 6.806e-14
+Proportion of Variance 0.00118 0.00112 0.00067 0.000e+00
+Cumulative Proportion  0.99821 0.99933 1.00000 1.000e+00</code></pre>
+<pre class="r"><code>summary(pc_analysis_norm)</code></pre>
+<pre><code>Importance of components:
+                           PC1      PC2      PC3      PC4      PC5      PC6
+Standard deviation     63.7261 55.55721 46.69229 43.13670 39.39161 31.08923
+Proportion of Variance  0.1229  0.09337  0.06595  0.05629  0.04694  0.02924
+Cumulative Proportion   0.1229  0.21622  0.28217  0.33846  0.38540  0.41464
+                            PC7      PC8     PC9     PC10     PC11     PC12
+Standard deviation     30.75067 28.55915 27.0284 26.70520 25.62782 25.15356
+Proportion of Variance  0.02861  0.02467  0.0221  0.02157  0.01987  0.01914
+Cumulative Proportion   0.44324  0.46792  0.4900  0.51159  0.53146  0.55060
+                           PC13     PC14    PC15     PC16     PC17     PC18
+Standard deviation     24.11700 23.86085 23.2092 22.39484 21.79094 21.31779
+Proportion of Variance  0.01759  0.01722  0.0163  0.01517  0.01436  0.01375
+Cumulative Proportion   0.56819  0.58542  0.6017  0.61688  0.63125  0.64499
+                           PC19     PC20     PC21     PC22     PC23     PC24
+Standard deviation     20.68578 20.58096 20.25395 19.88832 19.60818 19.27589
+Proportion of Variance  0.01294  0.01281  0.01241  0.01197  0.01163  0.01124
+Cumulative Proportion   0.65794  0.67075  0.68316  0.69513  0.70676  0.71800
+                           PC25     PC26    PC27     PC28     PC29     PC30
+Standard deviation     19.12083 19.01379 18.4510 18.15563 17.86315 17.80101
+Proportion of Variance  0.01106  0.01094  0.0103  0.00997  0.00965  0.00959
+Cumulative Proportion   0.72906  0.73999  0.7503  0.76026  0.76992  0.77950
+                           PC31     PC32     PC33     PC34     PC35     PC36
+Standard deviation     17.61133 17.35522 17.04804 16.83579 16.80063 16.58288
+Proportion of Variance  0.00938  0.00911  0.00879  0.00857  0.00854  0.00832
+Cumulative Proportion   0.78888  0.79800  0.80679  0.81536  0.82390  0.83222
+                           PC37     PC38     PC39     PC40     PC41     PC42
+Standard deviation     16.50429 16.24793 16.09148 15.91395 15.77019 15.50558
+Proportion of Variance  0.00824  0.00799  0.00783  0.00766  0.00752  0.00727
+Cumulative Proportion   0.84046  0.84845  0.85628  0.86394  0.87146  0.87874
+                           PC43     PC44     PC45    PC46     PC47     PC48
+Standard deviation     15.25197 15.14985 14.61278 14.5489 14.38677 14.37668
+Proportion of Variance  0.00704  0.00694  0.00646  0.0064  0.00626  0.00625
+Cumulative Proportion   0.88577  0.89272  0.89918  0.9056  0.91184  0.91809
+                          PC49     PC50    PC51     PC52     PC53     PC54
+Standard deviation     14.2004 13.99948 13.8526 13.45697 13.04598 12.75198
+Proportion of Variance  0.0061  0.00593  0.0058  0.00548  0.00515  0.00492
+Cumulative Proportion   0.9242  0.93012  0.9359  0.94140  0.94655  0.95147
+                          PC55     PC56    PC57     PC58     PC59     PC60
+Standard deviation     12.6027 12.44214 12.0570 11.81982 11.18607 11.08134
+Proportion of Variance  0.0048  0.00468  0.0044  0.00423  0.00379  0.00371
+Cumulative Proportion   0.9563  0.96096  0.9654  0.96958  0.97337  0.97708
+                           PC61     PC62     PC63    PC64    PC65    PC66
+Standard deviation     10.82567 10.63502 10.01461 9.81113 9.77201 9.38306
+Proportion of Variance  0.00355  0.00342  0.00303 0.00291 0.00289 0.00266
+Cumulative Proportion   0.98063  0.98405  0.98708 0.99000 0.99288 0.99555
+                          PC67   PC68  PC69     PC70
+Standard deviation     7.80792 7.2817 5.761 2.83e-14
+Proportion of Variance 0.00184 0.0016 0.001 0.00e+00
+Cumulative Proportion  0.99739 0.9990 1.000 1.00e+00</code></pre>
+<ul>
+<li><p>Below, PC1 vs. PC2 and PC1 vs. PC3 are plotted.</p></li>
+<li><p>Initially, we see that prior to normalisation (raw data PCA plots below), samples appear to group into three clusters based on their protein abundances.</p></li>
+</ul>
+<pre class="r"><code>pc_analysis_raw$x %&gt;%
+  as.data.frame %&gt;%
+  rownames_to_column(&quot;sample&quot;) %&gt;%
+  dplyr::select(sample, PC1, PC2) %&gt;%
+  left_join(dge$samples %&gt;% rownames_to_column(&quot;sample&quot;), by = &quot;sample&quot;) %&gt;%
+  ggplot(aes(x = PC1, y = PC2, colour = lib.size, label = sample)) +
+  geom_point(show.legend = TRUE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle(&quot;Raw log2 intensities (PC1 and PC2)&quot;) +
+  labs(x = &quot;PC1 (44.2%)&quot;, y = &quot;PC2 (6.7%)&quot;, colour = &quot;Total protein\nabundance&quot;) +
+  theme_cowplot()</code></pre>
+<p><img src="figure/explore.Rmd/unnamed-chunk-5-1.png" width="1440" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>pc_analysis_raw$x %&gt;%
+  as.data.frame %&gt;%
+  rownames_to_column(&quot;sample&quot;) %&gt;%
+  dplyr::select(sample, PC1, PC3) %&gt;%
+  left_join(dge$samples %&gt;% rownames_to_column(&quot;sample&quot;), by = &quot;sample&quot;) %&gt;%
+  ggplot(aes(x = PC1, y = PC3, colour = lib.size, label = sample)) +
+  geom_point(show.legend = TRUE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle(&quot;Raw log2 intensities (PC1 and PC3)&quot;) +
+  labs(x = &quot;PC1 (44.2%)&quot;, y = &quot;PC3 (5.7%)&quot;, colour = &quot;Total protein\nabundance&quot;) +
+  theme_cowplot()</code></pre>
+<p><img src="figure/explore.Rmd/unnamed-chunk-5-2.png" width="1440" style="display: block; margin: auto;" /></p>
+<ul>
+<li>After normalisation, most samples fall into one main cluster, with a few samples showing some extra variation. It is important to note that this variation is likely normal and not a cause of concern - especially as PC1 contributes only ~12% to the variation in protein abundances in the data.</li>
+</ul>
+<pre class="r"><code>pc_analysis_norm$x %&gt;%
+  as.data.frame %&gt;%
+  rownames_to_column(&quot;sample&quot;) %&gt;%
+  dplyr::select(sample, PC1, PC2) %&gt;%
+  left_join(dge$samples %&gt;% rownames_to_column(&quot;sample&quot;), by = &quot;sample&quot;) %&gt;%
+  ggplot(aes(x = PC1, y = PC2, colour = lib.size, label = sample)) +
+  geom_point(show.legend = FALSE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle(&quot;After Cyclic Loess Normalisation (PC1 and PC2)&quot;) +
+  labs(x = &quot;PC1 (12.2%)&quot;, y = &quot;PC2 (9.3%)&quot;, colour = &quot;Total protein\nabundance&quot;) +
+  theme_cowplot()</code></pre>
+<p><img src="figure/explore.Rmd/unnamed-chunk-6-1.png" width="1440" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>pc_analysis_norm$x %&gt;%
+  as.data.frame %&gt;%
+  rownames_to_column(&quot;sample&quot;) %&gt;%
+  dplyr::select(sample, PC1, PC3) %&gt;%
+  left_join(dge$samples %&gt;% rownames_to_column(&quot;sample&quot;), by = &quot;sample&quot;) %&gt;%
+  ggplot(aes(x = PC1, y = PC3, colour = lib.size, label = sample)) +
+  geom_point(show.legend = FALSE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle(&quot;After Cyclic Loess Normalisation (PC1 and PC3)&quot;) +
+  labs(x = &quot;PC1 (12.2%)&quot;, y = &quot;PC3 (6.5%)&quot;, colour = &quot;Total protein\nabundance&quot;) +
+  theme_cowplot()</code></pre>
+<p><img src="figure/explore.Rmd/unnamed-chunk-6-2.png" width="1440" style="display: block; margin: auto;" /></p>
+</div>
+<div id="umap" class="section level4">
+<h4>UMAP</h4>
+<ul>
+<li><p>PCA shows the global structure of the data well, but may not be the best at showing local structure. This may mean that subtle clustering in the data (eg differences between samples) may not stand out when PCA components are plotted. Here, I use a different dimension reduction technique UMAP which accounts for local structure. The idea behind UMAP is that it emphasises local structure at the cost of the distances between samples being representative of their overall similarity. (i.e. distances between samples are not directly proportional to how similar they are anymore).</p></li>
+<li><p>Overall, the evidence suggests that distinct clusters in the data is unlikely based on the UMAP plot below (and PCAs above). Most samples appear to have fairly similar protein abundances, and there appears to be a normal amount of variation across the samples, with a few samples having more different protein abundances compared to the main group of samples.</p></li>
+</ul>
+<pre class="r"><code>umap_norm &lt;- dge$norm %&gt;% t %&gt;% umap
+umap_norm$layout %&gt;% 
+  as.data.frame %&gt;% 
+  rownames_to_column(&quot;sample&quot;) %&gt;%
+  dplyr::select(sample, V1, V2) %&gt;%
+  left_join(dge$samples %&gt;% rownames_to_column(&quot;sample&quot;), by = &quot;sample&quot;) %&gt;%
+  #left_join(test ,by = &quot;sample&quot;) %&gt;%
+  ggplot(aes(x = V1, y = V2, colour = lib.size, label = sample)) +
+  geom_point(show.legend = FALSE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle(&quot;UMAP&quot;) +
+  labs(x = &quot;UMAP1&quot;, y = &quot;UMAP2&quot;) +
+  theme_cowplot()</code></pre>
+<p><img src="figure/explore.Rmd/unnamed-chunk-7-1.png" width="1440" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+</div>
+<div id="contributors-to-variation-in-protein-abundances-correlation-between-sample-metadata-variables" class="section level2">
+<h2>Contributors to variation in protein abundances (correlation between sample metadata variables)</h2>
+<ul>
+<li><p>Given that there is a decent amount variation in the samples even after normalisation, we may be interested in exploring the metadata which contributes to this variation. We can use a correlation plot as below to visualise the extent to which different sample metadata variables contribute to the first 5 PCs.</p></li>
+<li><p>The Spearman correlations which are significant at the <em>p</em>-value &lt; 0.1 level are shown below (the ones which are not significant are crossed out). Here we use Spearman correlation rather than Pearson as some of the variables are categorical (i.e. either 0 or 1) and not continuous.</p></li>
+<li><p>The colour scale represents Spearman correlation (<em>r^2</em>) values.</p></li>
+</ul>
+<pre class="r"><code>importantFeatures &lt;- dge$samples %&gt;%
+  rownames_to_column(&quot;sample&quot;) %&gt;%
+  #left_join(km_clusters, by = &quot;sample&quot;) %&gt;%
+  dplyr::select_(&quot;sample&quot;, 
+                 &quot;lib.size&quot;,
+                &quot;Age&quot;,
+                &quot;Sex&quot;,
+                &quot;Mechanism_Code&quot;,
+                &quot;Athero&quot;, 
+                &quot;Smoking&quot;,
+                &quot;HTN&quot;,
+                &quot;AF&quot;, 
+                &quot;Hyperlipidaemia&quot;, 
+                &quot;Diabetes&quot;,
+                &quot;Prev_dx_of_stroke&quot;,
+                &quot;Prev_dx_of_TIA&quot;,
+                &quot;CHF&quot;, 
+                &quot;IHD&quot;,
+                &quot;Aspirin&quot;,
+                &quot;Clopidogrel&quot;,
+                &quot;Dipyridamole&quot;, 
+                &quot;Warfarin&quot;,
+                &quot;Other_antithrombotic&quot;, 
+                &quot;Statin&quot;, 
+                &quot;Suspended_Anticoagulant&quot;, 
+                &quot;B_BG&quot;, 
+                &quot;HbA1c_mmolL&quot;,
+                &quot;Cholesterol_1224hr&quot;,
+                &quot;Red_Cell_Count&quot;, 
+                &quot;White_Cell_Count&quot;, 
+                &quot;Platelet_Count&quot;, 
+                &quot;Neutrophil_Count&quot;, 
+                &quot;Thrombolysis&quot;, 
+                &quot;Total_Passes&quot;, 
+                &quot;Reocclusion&quot;
+                ) %&gt;%
+  dplyr::mutate(Sex = case_when(Sex == &quot;F&quot; ~ 0,
+                                Sex == &quot;M&quot; ~ 1)) %&gt;%
+  dplyr::mutate(Sex = as.numeric(Sex)) %&gt;%
+  dplyr::rename(Total_Protein_Abundance = lib.size) %&gt;%
+  column_to_rownames(&quot;sample&quot;) %&gt;%
+    select_if(~ !any(is.na(.))) %&gt;%
+  dplyr::select(-Dipyridamole, -Warfarin)</code></pre>
+<pre><code>Warning: `select_()` was deprecated in dplyr 0.7.0.
+Please use `select()` instead.</code></pre>
+<pre class="r"><code>col3 &lt;- colorRampPalette(c(&quot;red&quot;, &quot;white&quot;, &quot;SeaGreen&quot;)) 
+
+
+correlationDf &lt;- importantFeatures %&gt;%
+  rownames_to_column(&quot;sample&quot;) %&gt;%
+  left_join(pc_analysis_norm$x %&gt;%
+              as.data.frame %&gt;% 
+              rownames_to_column(&quot;sample&quot;) %&gt;% 
+              dplyr::select(sample, PC1, PC2, PC3, PC4, PC5)) %&gt;%
+  column_to_rownames(&quot;sample&quot;) </code></pre>
+<pre><code>Joining, by = &quot;sample&quot;</code></pre>
+<pre class="r"><code>correlationDf &lt;- sapply(correlationDf,as.numeric)
+
+res1 &lt;- corrplot::cor.mtest(correlationDf, conf.level = .95)
+
+correlationDf %&gt;%
+  cor(method = &quot;spearman&quot;) %&gt;% 
+  corrplot::corrplot(
+    hclust.method =  &quot;average&quot;,
+    tl.col = &quot;black&quot;,
+    tl.cex = 0.6,
+    #method = &quot;number&quot;,
+    addgrid.col = &quot;#eeeeee&quot;,
+    cl.ratio = .2,
+    cl.align = &quot;l&quot;,
+    col = col3(20),
+    type = &quot;upper&quot;,
+    p.mat = res1$p,  sig.level = 0.1
+  )</code></pre>
+<p><img src="figure/explore.Rmd/unnamed-chunk-8-1.png" width="1056" style="display: block; margin: auto;" /></p>
+<ul>
+<li><p>Overall, the variables are for the most part, not that correlated to each other. Correlation mainly ranges from -0.5 to 0.5.</p></li>
+<li><p>The total protein abundance is the major source of variation in the data, showing significant correlation to both PC1 and PC3.</p></li>
+<li><p>Many of the other metadata variables are correlated to Age (e.g. Smoking has negative correlation, HTN and Hyperlipidaemia are positively correlated)</p></li>
+<li><p>Statin is also positively correlated to various other variables including Age, Hyperlipidaemia, Diabetes, IHD and Aspirin. However, all of these are either 0.5 or below, indicating the correlation is not extremely strong.</p></li>
+<li><p>Not many of the biologically interesting variables are clearly correlated to any of the top 5 sources of variation in the data. This is concerning as it means that the biological effect on the protein abundances may be quite subtle, and difficult to detect/analyse.</p></li>
+</ul>
+<div id="feature-importance" class="section level3">
+<h3>Feature Importance</h3>
+<ul>
+<li><p>Another alternative to doing correlations between all metadata variables is to rank the variables by their <strong>feature importance</strong>. To do this, we build a model (here in the <code>caret</code> package, the default is Random Forest (<code>rf</code>)), and then see which of the features are most informative for predicting a particular response variable.</p></li>
+<li><p>Below, I have set the response variable as <code>Mechanism_Code</code> which corresponds to the mechanism (subtype) for the blood clot (a clinical diagnosis that we would expect to have quite a large effect in the data), and the features as the other variables in the correlation matrix above.</p></li>
+<li><p>We can see in the Feature Importance plot below that Age and Total_Protein_Abundance for each sample are the most important features, although Sex, Aspirin, Smoking, Statin, Diabetes etc also contribute a smaller amount of importance.</p></li>
+</ul>
+<pre class="r"><code>featuresToTest &lt;- correlationDf %&gt;%
+  as.data.frame %&gt;%
+  dplyr::select(-starts_with(&quot;PC&quot;)) %&gt;%
+  as.matrix
+
+control &lt;- trainControl(method=&quot;repeatedcv&quot;, number=10, repeats=3)
+# train the model
+model &lt;- train(Mechanism_Code~., data=featuresToTest,  preProcess=&quot;scale&quot;, trControl=control)</code></pre>
+<pre><code>Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?
+
+Warning in randomForest.default(x, y, mtry = param$mtry, ...): The response has
+five or fewer unique values. Are you sure you want to do regression?</code></pre>
+<pre class="r"><code># estimate variable importance
+importance &lt;- varImp(model, scale=FALSE)
+# summarize importance
+print(importance)</code></pre>
+<pre><code>rf variable importance
+
+                        Overall
+Age                      52.915
+Total_Protein_Abundance  47.191
+Sex                       6.760
+Hyperlipidaemia           5.499
+Aspirin                   4.701
+Smoking                   3.983
+HTN                       3.077
+Thrombolysis              2.946
+Diabetes                  2.601
+Other_antithrombotic      2.579
+Statin                    2.551
+IHD                       2.278
+Clopidogrel               1.591
+CHF                       1.056</code></pre>
+<pre class="r"><code># plot importance
+plot(importance)</code></pre>
+<p><img src="figure/explore.Rmd/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="proteins-with-high-expression" class="section level2">
+<h2>Proteins with High Expression</h2>
+<ul>
+<li>I have gone through each sample and selected the top 10 most abundant proteins detected in each sample. A table is shown below, showing some of these proteins. <code>n</code> corresponds to how many samples have that protein as one of their top 10 most abundant proteins.</li>
+</ul>
+<pre class="r"><code>topExpressedProteins &lt;- dge$norm %&gt;%
+  melt() %&gt;%
+  dplyr::group_by(Var2) %&gt;%
+  dplyr::arrange(desc(value), .by_group = TRUE) %&gt;%
+  dplyr::slice_max(order_by = value, n = 10) %&gt;% 
+  inner_join(dge$genes, by = c(&quot;Var1&quot;=&quot;UniProt_ID&quot;)) %&gt;%
+  dplyr::group_by(Var1) %&gt;%
+  dplyr::mutate(dupl = n() &gt; 1)%&gt;% 
+  dplyr::filter(dupl == TRUE) %&gt;%
+  dplyr::select(Var1, Var2, value, Protein_IDs, dupl)
+
+topExpressedProteins2 &lt;- topExpressedProteins %&gt;%
+  dplyr::summarise(n = n()) %&gt;%
+  dplyr::arrange(desc(n)) %&gt;% 
+  dplyr::rename(UniProt_ID = Var1) %&gt;%
+  left_join(dge$genes[,c(&quot;UniProt_ID&quot;, &quot;Gene&quot;)]) %&gt;%
+  dplyr::select(UniProt_ID, Gene, n)</code></pre>
+<pre><code>Joining, by = &quot;UniProt_ID&quot;</code></pre>
+<pre class="r"><code>topExpressedProteins2</code></pre>
+<pre><code># A tibble: 99 x 3
+   UniProt_ID Gene      n
+   &lt;chr&gt;      &lt;chr&gt; &lt;int&gt;
+ 1 P69905     HBA      57
+ 2 P68871     HBB      51
+ 3 P60709     ACTB     41
+ 4 P02671     FIBA     38
+ 5 P02768     ALBU     35
+ 6 P02675     FIBB     33
+ 7 P02679     FIBG     33
+ 8 P00915     CAH1     29
+ 9 P21333     FLNA     26
+10 P35579     MYH9     16
+# … with 89 more rows</code></pre>
+<div id="heatmap-visualisation" class="section level3">
+<h3>Heatmap visualisation</h3>
+<ul>
+<li>A heatmap is used to visualise relative abundances of the most abundant proteins, along with relevant metadata variables.</li>
+</ul>
+<pre class="r"><code># Create an annotation data.frame for the heatmap
+# annot_cols &lt;- dge$samples %&gt;%
+#   rownames_to_column(&quot;sample&quot;) %&gt;%
+#   dplyr::select(sample, Age, Sex, Mechanism_Code) %&gt;%
+#   column_to_rownames(&quot;sample&quot;)
+
+annot_cols &lt;- importantFeatures &lt;- dge$samples %&gt;%
+  rownames_to_column(&quot;sample&quot;) %&gt;%
+  dplyr::select_(&quot;sample&quot;, 
+                 &quot;lib.size&quot;,
+                &quot;Age&quot;,
+                &quot;Sex&quot;,
+                &quot;Mechanism_Code&quot;,
+                &quot;Athero&quot;, 
+                &quot;Smoking&quot;,
+                &quot;HTN&quot;,
+                &quot;AF&quot;, 
+                &quot;Hyperlipidaemia&quot;, 
+                &quot;Diabetes&quot;,
+                &quot;Prev_dx_of_stroke&quot;,
+                &quot;Prev_dx_of_TIA&quot;,
+                &quot;CHF&quot;, 
+                &quot;IHD&quot;,
+                &quot;Aspirin&quot;,
+                &quot;Clopidogrel&quot;,
+                &quot;Dipyridamole&quot;, 
+                &quot;Warfarin&quot;,
+                &quot;Other_antithrombotic&quot;, 
+                &quot;Statin&quot;, 
+                &quot;Suspended_Anticoagulant&quot;, 
+                &quot;B_BG&quot;, 
+                &quot;HbA1c_mmolL&quot;,
+                &quot;Cholesterol_1224hr&quot;,
+                &quot;Red_Cell_Count&quot;, 
+                &quot;White_Cell_Count&quot;, 
+                &quot;Platelet_Count&quot;, 
+                &quot;Neutrophil_Count&quot;, 
+                &quot;Thrombolysis&quot;, 
+                &quot;Total_Passes&quot;, 
+                &quot;Reocclusion&quot;
+                ) %&gt;%
+  dplyr::rename(Total_Protein_Abundance = lib.size) %&gt;%
+  column_to_rownames(&quot;sample&quot;) %&gt;%
+    select_if(~ !any(is.na(.))) %&gt;%
+  dplyr::select(-Dipyridamole, -Warfarin)
+
+annot_colours &lt;- list(
+  Smoking = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;orange&quot;, &quot;2&quot; = &quot;red&quot;),
+  Other_antithrombotic = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;orange&quot;, &quot;2&quot; = &quot;red&quot;),
+  Clopidogrel = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;red&quot;),
+  Aspirin = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;red&quot;),
+  IHD = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;red&quot;),
+  CHF = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;red&quot;),
+  Diabetes = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;red&quot;),
+  HTN = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;red&quot;),
+  Hyperlipidaemia = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;red&quot;),
+  Thrombolysis = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;red&quot;),
+  Statin = c(&quot;0&quot; = &quot;#dddddd&quot;, &quot;1&quot; = &quot;red&quot;),
+  Mechanism_Code = c(&quot;0&quot; = &quot;Magenta&quot;,
+                     &quot;1&quot; = &quot;MediumPurple&quot;,
+                     &quot;2&quot; = &quot;turquoise&quot;,
+                     &quot;3&quot; = &quot;yellow&quot;,
+                     &quot;4&quot; = &quot;firebrick&quot;, 
+                     &quot;5&quot; = &quot;YellowGreen&quot;),
+  Sex = c(&quot;M&quot; = &quot;royalblue&quot;, &quot;F&quot; = &quot;salmon&quot;)
+)
+  
+
+dataForHeatmap &lt;- dge$norm %&gt;% 
+  as.data.frame %&gt;% 
+  rownames_to_column(&quot;UniProt_ID&quot;) %&gt;%
+  dplyr::filter(UniProt_ID %in% topExpressedProteins2$UniProt_ID) %&gt;% 
+  left_join(topExpressedProteins2[, c(&quot;UniProt_ID&quot;, &quot;Gene&quot;)]) %&gt;% 
+  dplyr::mutate(Gene = paste0(Gene, &quot; (&quot;, UniProt_ID, &quot;)&quot;)) %&gt;%
+  dplyr::select(-UniProt_ID) %&gt;%
+  column_to_rownames(&quot;Gene&quot;) </code></pre>
+<pre><code>Joining, by = &quot;UniProt_ID&quot;</code></pre>
+<pre class="r"><code>topAbundantProteinHeatmap &lt;- dataForHeatmap %&gt;%
+  pheatmap::pheatmap(scale=&quot;row&quot;, cellwidth = 10, cellheight=10,
+                     color = colorRampPalette(c(&quot;#10c1e5&quot;, 
+                                                &quot;#82e0b4&quot;,
+                                                &quot;#F9F9F9&quot;,
+                                                &quot;#FBB829&quot;,
+                                                &quot;#FF0066&quot;))(100),
+                     annotation_colors = annot_colours,
+                     annotation_col = annot_cols, 
+                     border_color = &quot;white&quot;,
+                     treeheight_row = 0)
+topAbundantProteinHeatmap</code></pre>
+<p><img src="figure/explore.Rmd/unnamed-chunk-11-1.png" width="1440" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#save_pheatmap_pdf(topAbundantProteinHeatmap, 
+ #                 filename = here(&quot;output&quot;, &quot;abundant_protein_heatmap.pdf&quot;), width = 16, height = 20)</code></pre>
+</div>
+</div>
+<div id="highly-variable-proteins" class="section level2">
+<h2>Highly Variable Proteins</h2>
+<ul>
+<li>Here, I define Highly Variable proteins as those which are in the top 25% percentile of proteins showing the highest standard deviation across all samples and also are expressed at an abundance in the top 50% percentile of proteins.</li>
+</ul>
+<pre class="r"><code>variableProteins &lt;- genefilter::rowSds(dge$norm) &gt; quantile(genefilter::rowSds(dge$norm), 0.75)
+table(variableProteins)</code></pre>
+<pre><code>variableProteins
+FALSE  TRUE 
+ 1033   344 </code></pre>
+<pre class="r"><code>abundantProteins &lt;- rowSums(dge$norm) &gt; quantile(rowSums(dge$norm), 0.5)
+table(abundantProteins)</code></pre>
+<pre><code>abundantProteins
+FALSE  TRUE 
+  689   688 </code></pre>
+<pre class="r"><code>table(variableProteins &amp; abundantProteins)</code></pre>
+<pre><code>
+FALSE  TRUE 
+ 1053   324 </code></pre>
+<pre class="r"><code>variableHeatmap &lt;- dge$norm[(variableProteins &amp; abundantProteins),] %&gt;%
+  as.data.frame %&gt;%
+  rownames_to_column(&quot;UniProt_ID&quot;) %&gt;%
+  dplyr::left_join(dge$genes[, c(&quot;UniProt_ID&quot;, &quot;Gene&quot;)]) %&gt;%
+  dplyr::mutate(Gene = paste0(Gene, &quot; (&quot;, UniProt_ID, &quot;)&quot;)) %&gt;%
+  dplyr::select(-UniProt_ID) %&gt;%
+  column_to_rownames(&quot;Gene&quot;) %&gt;%
+  pheatmap::pheatmap(scale=&quot;row&quot;, 
+                     cellwidth = 10, cellheight=10,
+                     color = colorRampPalette(c(&quot;#10c1e5&quot;, 
+                                                &quot;#82e0b4&quot;,
+                                                &quot;#F9F9F9&quot;,
+                                                &quot;#FBB829&quot;,
+                                                &quot;#FF0066&quot;))(100),
+                     annotation_colors = annot_colours,
+                     annotation_col = annot_cols, 
+                     border_color = &quot;white&quot;,
+                     treeheight_row = 0)</code></pre>
+<pre><code>Joining, by = &quot;UniProt_ID&quot;</code></pre>
+<pre class="r"><code>variableHeatmap</code></pre>
+<p><img src="figure/explore.Rmd/unnamed-chunk-12-1.png" width="1536" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#save_pheatmap_pdf(variableHeatmap, 
+#                  filename = here(&quot;output&quot;, &quot;variable_protein_heatmap.pdf&quot;), width = 16, height = 60)</code></pre>
+<pre class="r"><code>topExpressedProteins &lt;- dge$norm %&gt;%
+  melt() %&gt;%
+  dplyr::group_by(Var2) %&gt;%
+  dplyr::arrange(desc(value), .by_group = TRUE) %&gt;%
+  dplyr::slice_max(order_by = value, n = 10) %&gt;% 
+  inner_join(dge$genes, by = c(&quot;Var1&quot;=&quot;UniProt_ID&quot;)) %&gt;%
+  dplyr::group_by(Var1) %&gt;%
+  dplyr::mutate(dupl = n() &gt; 1)%&gt;% 
+  dplyr::filter(dupl == TRUE) %&gt;%
+  dplyr::select(Var1, Var2, value, Protein_IDs, dupl)
+
+topExpressedProteins2 &lt;- topExpressedProteins %&gt;%
+  dplyr::summarise(n = n()) %&gt;%
+  dplyr::arrange(desc(n)) %&gt;% 
+  dplyr::rename(UniProt_ID = Var1) %&gt;%
+  left_join(dge$genes[,c(&quot;UniProt_ID&quot;, &quot;Gene&quot;)]) %&gt;%
+  dplyr::select(UniProt_ID, Gene, n)</code></pre>
+<pre><code>Joining, by = &quot;UniProt_ID&quot;</code></pre>
+<pre class="r"><code>topExpressedProteins2</code></pre>
+<pre><code># A tibble: 99 x 3
+   UniProt_ID Gene      n
+   &lt;chr&gt;      &lt;chr&gt; &lt;int&gt;
+ 1 P69905     HBA      57
+ 2 P68871     HBB      51
+ 3 P60709     ACTB     41
+ 4 P02671     FIBA     38
+ 5 P02768     ALBU     35
+ 6 P02675     FIBB     33
+ 7 P02679     FIBG     33
+ 8 P00915     CAH1     29
+ 9 P21333     FLNA     26
+10 P35579     MYH9     16
+# … with 89 more rows</code></pre>
+</div>
+<div id="next-steps" class="section level2">
+<h2>Next steps</h2>
+<ul>
+<li>Unfortunately, the story that the data tells us is that the majority of variation seen in protein abundances between samples cannot be explained by the vast majority of the metadata variables that were measured for the samples. Possible reasons for this may include:</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><p><strong>Technical artifacts or “batch effects” in samples</strong>: Blood clot samples were not all taken on the same day, and their protein abundances were measured on different days. This can cause a technical batch effect where differences in storage time / wet-lab differences etc could contribute to the majority of variation we are seeing. Because the date at which protein abundances and other metadata variables were measured is not available, we cannot try to correct for this batch effect statistically (e.g. through modelling it as a fixed effect in a linear model). For all future samples which are collected, it is important that we include the dates / batches of when they were processed / measured.</p></li>
+<li><p><strong>Possible insufficient sample size</strong>: There are 70 samples representing 5 different types of blood clots. Some of the types of blood clot do not have many samples and this may not be representative of the protein abundances. A greater sample size would likely be very helpful in seeing how strong the true biological effect is vs. technical artifacts.</p></li>
+<li><p><strong>Missing and incorrectly coded data in sample metadata</strong>: Some of the sample metadata is incomplete (missing values) or incorrectly/inconsistently coded.</p></li>
+</ol>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.0.3 (2020-10-10)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Mojave 10.14.6
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_AU.UTF-8/en_AU.UTF-8/en_AU.UTF-8/C/en_AU.UTF-8/en_AU.UTF-8
+
+attached base packages:
+ [1] grid      parallel  stats4    stats     graphics  grDevices utils    
+ [8] datasets  methods   base     
+
+other attached packages:
+ [1] umap_0.2.7.0         pheatmap_1.0.12      cowplot_1.1.0       
+ [4] mlbench_2.1-3        caret_6.0-86         lattice_0.20-41     
+ [7] org.Hs.eg.db_3.12.0  AnnotationDbi_1.52.0 IRanges_2.24.0      
+[10] S4Vectors_0.28.0     Biobase_2.50.0       BiocGenerics_0.36.0 
+[13] edgeR_3.32.0         limma_3.46.0         readr_1.4.0         
+[16] tidyr_1.1.3          tibble_3.1.1         reshape2_1.4.4      
+[19] ggplot2_3.3.3        dplyr_1.0.5          magrittr_2.0.1      
+[22] here_1.0.0           workflowr_1.6.2     
+
+loaded via a namespace (and not attached):
+ [1] nlme_3.1-149         fs_1.5.0             lubridate_1.7.10    
+ [4] bit64_4.0.5          httr_1.4.2           RColorBrewer_1.1-2  
+ [7] rprojroot_2.0.2      tools_4.0.3          bslib_0.2.4         
+[10] utf8_1.1.4           R6_2.5.0             rpart_4.1-15        
+[13] DBI_1.1.0            colorspace_2.0-0     nnet_7.3-14         
+[16] withr_2.3.0          tidyselect_1.1.0     bit_4.0.4           
+[19] compiler_4.0.3       git2r_0.27.1         cli_3.0.1           
+[22] labeling_0.4.2       sass_0.3.1           scales_1.1.1        
+[25] genefilter_1.72.1    randomForest_4.6-14  askpass_1.1         
+[28] stringr_1.4.0        digest_0.6.27        rmarkdown_2.8       
+[31] pkgconfig_2.0.3      htmltools_0.5.1.1    rlang_0.4.10        
+[34] rstudioapi_0.13      RSQLite_2.2.1        farver_2.0.3        
+[37] jquerylib_0.1.3      generics_0.1.0       jsonlite_1.7.2      
+[40] ModelMetrics_1.2.2.2 Matrix_1.2-18        Rcpp_1.0.5          
+[43] munsell_0.5.0        fansi_0.4.1          reticulate_1.18     
+[46] lifecycle_1.0.0      stringi_1.5.3        whisker_0.4         
+[49] pROC_1.16.2          yaml_2.2.1           MASS_7.3-53         
+[52] plyr_1.8.6           recipes_0.1.15       blob_1.2.1          
+[55] ggrepel_0.8.2        promises_1.1.1       crayon_1.4.1        
+[58] splines_4.0.3        annotate_1.68.0      hms_1.0.0           
+[61] locfit_1.5-9.4       knitr_1.30           pillar_1.6.0        
+[64] codetools_0.2-16     XML_3.99-0.5         glue_1.4.2          
+[67] evaluate_0.14        data.table_1.13.2    vctrs_0.3.7         
+[70] httpuv_1.5.4         foreach_1.5.1        openssl_1.4.3       
+[73] gtable_0.3.0         purrr_0.3.4          assertthat_0.2.1    
+[76] xfun_0.23            gower_0.2.2          prodlim_2019.11.13  
+[79] xtable_1.8-4         RSpectra_0.16-0      later_1.1.0.1       
+[82] class_7.3-17         survival_3.2-7       timeDate_3043.102   
+[85] iterators_1.0.13     memoise_1.1.0        corrplot_0.84       
+[88] lava_1.6.8.1         ellipsis_0.3.1       ipred_0.9-9         </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
