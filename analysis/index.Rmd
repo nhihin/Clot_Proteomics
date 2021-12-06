@@ -8,4 +8,21 @@ editor_options:
   chunk_output_type: console
 ---
 
-Welcome to my research website.
+## Motivation for this analysis
+
+- This data describes protein abundance in different blood clot samples originating from patients (anonymised data). The data is fairly old and we are currently unsure what it actually looks like and whether there is value in the data. General exploratory and descriptive analysis needs to be done. 
+- Would like to know whether there are associations between particular metadata variables in samples that are associated with protein abundance measurements. 
+
+## Analysis Steps
+
+The analysis steps are summarised below.
+
+1. [Data import and cleaning](import.html): Protein abundances and sample metadata are imported, normalised, and filtered. 
+2. [Basic data exploration](explore.html): The following analyses were done to explore the data:
+
+  - Dimension reduction was used to see whether there is latent structure in the samples (e.g. whether clusters of samples exist). 
+  - The most highly abundant and variable proteins were also pulled out to see whether there was biological significance/relevance in these. 
+  - Correlation between sample metadata variables. 
+  - Feature importance to determine whether sample metadata contributes to the protein abundances seen. 
+
+3. **Building classifier / other analysis for statistical significance**: Unfortunately the analysis cannot proceed to this step as there is a lack of significant association between the current metadata variables and protein abundance. Currently awaiting more samples - hopefully a larger sample size may help to reveal more subtle associations. 

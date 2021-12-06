@@ -1,0 +1,483 @@
+---
+title: "Basic data exploration"
+author: "Nhi Hin"
+date: "2021-12-06"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r include=FALSE}
+# Basics
+library(here)
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(tibble)
+library(tidyr)
+library(readr)
+
+# Analysis
+library(edgeR)
+library(limma)
+library(org.Hs.eg.db)
+library(caret)
+library(mlbench)
+
+# Visualisation
+library(cowplot)
+library(pheatmap)
+library(umap)
+library(grid)
+theme_set(theme_bw())
+
+save_pheatmap_pdf <- function(x, filename, width=8, height=11) {
+   stopifnot(!missing(x))
+   stopifnot(!missing(filename))
+   pdf(filename, width=width, height=height)
+   grid::grid.newpage()
+   grid::grid.draw(x$gtable)
+   dev.off()
+}
+```
+
+
+## Summary
+
+- In this RMarkdown, some basic data exploration is done, namely:
+
+  - **Dimension reduction using Principal Component Analysis (PCA and UMAP)** to look at similarity between samples in terms of their overall protein abundances. This is required as the protein abundance data is high dimensional (>1,000 features but only 70 samples). 
+  - **Correlation between metadata variables**: There are ~30 metadata variables and it is unknown whether they are correlated to each other or not. Spearman correlation was used to show that there were several significant correlations.  
+  - **Feature importance** indicates that the vast majority of metadata variables do not appear to significantly contribute to explaining protein abundances, except for age and total_protein_abundance. Sex, Aspirin, Smoking, Statin, Diabetes contribute a small amount to explaining the protein abundances seen. 
+  
+- Unfortunately, the story that the data tells us is that the majority of variation seen in protein abundances between samples cannot be explained by the vast majority of the metadata variables that were measured for the samples. I discuss some limitations of the data later and possible ways to we may be able to remedy this. 
+
+## Import in processed/filtered data
+
+- The data was previously cleaned (see [data import and cleaning](import.html)). 
+
+- Below we import in the saved R object containing all sample metadata and protein abundances:
+
+```{r}
+dge <- readRDS(here("data", "dge.rds"))
+```
+
+### Dimension Reduction
+
+#### PCA
+
+- Principal Component Analysis (PCA) is a dimension reduction technique. Here we use it to "reduce the dimensions" of the >1,500 protein abundances for the 70 samples such that each sample has a smaller number of Principal Components (PCs), that summarise their protein abundances. These PCs can be plotted and we can interpret the distance between samples as indicating how overall similar they are to each other based on their protein abundances. 
+
+- Here we calculate the PCs for the data before and after normalisation:
+
+```{r}
+pc_analysis_raw <- dge$counts %>% add(0.25) %>% log2 %>% t %>% prcomp()
+pc_analysis_norm <- dge$norm %>% t %>% prcomp()
+```
+
+- The summaries below indicate that the majority of variation in the data is captured in the first principal component, especially for the raw data (~40% of variation in the data). However, after normalisation, we can see that the first principal component only captures around 12% of the variation, indicating that it is likely that technical differences in size of data between samples or other technical factors affecting the distributions of the samples has been mitigated through normalisation. After normalisation, the samples are generally appearing more "similar". 
+
+```{r}
+summary(pc_analysis_raw)
+summary(pc_analysis_norm)
+```
+
+- Below, PC1 vs. PC2 and PC1 vs. PC3 are plotted. 
+
+- Initially, we see that prior to normalisation (raw data PCA plots below), samples appear to group into three clusters based on their protein abundances. 
+
+```{r fig.height=8, fig.width=15}
+pc_analysis_raw$x %>%
+  as.data.frame %>%
+  rownames_to_column("sample") %>%
+  dplyr::select(sample, PC1, PC2) %>%
+  left_join(dge$samples %>% rownames_to_column("sample"), by = "sample") %>%
+  ggplot(aes(x = PC1, y = PC2, colour = lib.size, label = sample)) +
+  geom_point(show.legend = TRUE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle("Raw log2 intensities (PC1 and PC2)") +
+  labs(x = "PC1 (44.2%)", y = "PC2 (6.7%)", colour = "Total protein\nabundance") +
+  theme_cowplot()
+
+pc_analysis_raw$x %>%
+  as.data.frame %>%
+  rownames_to_column("sample") %>%
+  dplyr::select(sample, PC1, PC3) %>%
+  left_join(dge$samples %>% rownames_to_column("sample"), by = "sample") %>%
+  ggplot(aes(x = PC1, y = PC3, colour = lib.size, label = sample)) +
+  geom_point(show.legend = TRUE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle("Raw log2 intensities (PC1 and PC3)") +
+  labs(x = "PC1 (44.2%)", y = "PC3 (5.7%)", colour = "Total protein\nabundance") +
+  theme_cowplot()
+```
+
+- After normalisation, most samples fall into one main cluster, with a few samples showing some extra variation. It is important to note that this variation is likely normal and not a cause of concern - especially as PC1 contributes only ~12% to the variation in protein abundances in the data. 
+
+```{r fig.height=8, fig.width=15}
+pc_analysis_norm$x %>%
+  as.data.frame %>%
+  rownames_to_column("sample") %>%
+  dplyr::select(sample, PC1, PC2) %>%
+  left_join(dge$samples %>% rownames_to_column("sample"), by = "sample") %>%
+  ggplot(aes(x = PC1, y = PC2, colour = lib.size, label = sample)) +
+  geom_point(show.legend = FALSE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle("After Cyclic Loess Normalisation (PC1 and PC2)") +
+  labs(x = "PC1 (12.2%)", y = "PC2 (9.3%)", colour = "Total protein\nabundance") +
+  theme_cowplot()
+
+pc_analysis_norm$x %>%
+  as.data.frame %>%
+  rownames_to_column("sample") %>%
+  dplyr::select(sample, PC1, PC3) %>%
+  left_join(dge$samples %>% rownames_to_column("sample"), by = "sample") %>%
+  ggplot(aes(x = PC1, y = PC3, colour = lib.size, label = sample)) +
+  geom_point(show.legend = FALSE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle("After Cyclic Loess Normalisation (PC1 and PC3)") +
+  labs(x = "PC1 (12.2%)", y = "PC3 (6.5%)", colour = "Total protein\nabundance") +
+  theme_cowplot()
+```
+
+#### UMAP
+
+- PCA shows the global structure of the data well, but may not be the best at showing local structure. This may mean that subtle clustering in the data (eg differences between samples) may not stand out when PCA components are plotted. Here, I use a different dimension reduction technique UMAP which accounts for local structure. The idea behind UMAP is that it emphasises local structure at the cost of the distances between samples being representative of their overall similarity. (i.e. distances between samples are not directly proportional to how similar they are anymore). 
+
+- Overall, the evidence suggests that distinct clusters in the data is unlikely based on the UMAP plot below (and PCAs above). Most samples appear to have fairly similar protein abundances, and there appears to be a normal amount of variation across the samples, with a few samples having more different protein abundances compared to the main group of samples. 
+
+```{r fig.width=15}
+umap_norm <- dge$norm %>% t %>% umap
+umap_norm$layout %>% 
+  as.data.frame %>% 
+  rownames_to_column("sample") %>%
+  dplyr::select(sample, V1, V2) %>%
+  left_join(dge$samples %>% rownames_to_column("sample"), by = "sample") %>%
+  #left_join(test ,by = "sample") %>%
+  ggplot(aes(x = V1, y = V2, colour = lib.size, label = sample)) +
+  geom_point(show.legend = FALSE) +
+  ggrepel::geom_label_repel(show.legend = FALSE) +
+  ggtitle("UMAP") +
+  labs(x = "UMAP1", y = "UMAP2") +
+  theme_cowplot()
+
+```
+
+## Contributors to variation in protein abundances (correlation between sample metadata variables)
+
+- Given that there is a decent amount variation in the samples even after normalisation, we may be interested in exploring the metadata which contributes to this variation. We can use a correlation plot as below to visualise the extent to which different sample metadata variables contribute to the first 5 PCs. 
+
+- The Spearman correlations which are significant at the *p*-value < 0.1 level are shown below (the ones which are not significant are crossed out). Here we use Spearman correlation rather than Pearson as some of the variables are categorical (i.e. either 0 or 1) and not continuous. 
+
+- The colour scale represents Spearman correlation (*r^2*) values. 
+
+```{r fig.width=11, fig.height=11}
+importantFeatures <- dge$samples %>%
+  rownames_to_column("sample") %>%
+  #left_join(km_clusters, by = "sample") %>%
+  dplyr::select_("sample", 
+                 "lib.size",
+                "Age",
+                "Sex",
+                "Mechanism_Code",
+                "Athero", 
+                "Smoking",
+                "HTN",
+                "AF", 
+                "Hyperlipidaemia", 
+                "Diabetes",
+                "Prev_dx_of_stroke",
+                "Prev_dx_of_TIA",
+                "CHF", 
+                "IHD",
+                "Aspirin",
+                "Clopidogrel",
+                "Dipyridamole", 
+                "Warfarin",
+                "Other_antithrombotic", 
+                "Statin", 
+                "Suspended_Anticoagulant", 
+                "B_BG", 
+                "HbA1c_mmolL",
+                "Cholesterol_1224hr",
+                "Red_Cell_Count", 
+                "White_Cell_Count", 
+                "Platelet_Count", 
+                "Neutrophil_Count", 
+                "Thrombolysis", 
+                "Total_Passes", 
+                "Reocclusion"
+                ) %>%
+  dplyr::mutate(Sex = case_when(Sex == "F" ~ 0,
+                                Sex == "M" ~ 1)) %>%
+  dplyr::mutate(Sex = as.numeric(Sex)) %>%
+  dplyr::rename(Total_Protein_Abundance = lib.size) %>%
+  column_to_rownames("sample") %>%
+    select_if(~ !any(is.na(.))) %>%
+  dplyr::select(-Dipyridamole, -Warfarin)
+
+col3 <- colorRampPalette(c("red", "white", "SeaGreen")) 
+
+
+correlationDf <- importantFeatures %>%
+  rownames_to_column("sample") %>%
+  left_join(pc_analysis_norm$x %>%
+              as.data.frame %>% 
+              rownames_to_column("sample") %>% 
+              dplyr::select(sample, PC1, PC2, PC3, PC4, PC5)) %>%
+  column_to_rownames("sample") 
+
+correlationDf <- sapply(correlationDf,as.numeric)
+
+res1 <- corrplot::cor.mtest(correlationDf, conf.level = .95)
+
+correlationDf %>%
+  cor(method = "spearman") %>% 
+  corrplot::corrplot(
+    hclust.method =  "average",
+    tl.col = "black",
+    tl.cex = 0.6,
+    #method = "number",
+    addgrid.col = "#eeeeee",
+    cl.ratio = .2,
+    cl.align = "l",
+    col = col3(20),
+    type = "upper",
+    p.mat = res1$p,  sig.level = 0.1
+  )
+```
+
+- Overall, the variables are for the most part, not that correlated to each other. Correlation mainly ranges from -0.5 to 0.5. 
+
+- The total protein abundance is the major source of variation in the data, showing significant correlation to both PC1 and PC3. 
+
+- Many of the other metadata variables are correlated to Age (e.g. Smoking has negative correlation, HTN and Hyperlipidaemia are positively correlated)
+
+- Statin is also positively correlated to various other variables including Age, Hyperlipidaemia, Diabetes, IHD and Aspirin. However, all of these are either 0.5 or below, indicating the correlation is not extremely strong. 
+
+- Not many of the biologically interesting variables are clearly correlated to any of the top 5 sources of variation in the data. This is concerning as it means that the biological effect on the protein abundances may be quite subtle, and difficult to detect/analyse. 
+
+### Feature Importance
+
+- Another alternative to doing correlations between all metadata variables is to rank the variables by their **feature importance**. To do this, we build a model (here in the `caret` package, the default is Random Forest (`rf`)), and then see which of the features are most informative for predicting a particular response variable. 
+
+- Below, I have set the response variable as `Mechanism_Code` which corresponds to the mechanism (subtype) for the blood clot (a clinical diagnosis that we would expect to have quite a large effect in the data), and the features as the other variables in the correlation matrix above. 
+
+- We can see in the Feature Importance plot below that Age and Total_Protein_Abundance for each sample are the most important features, although Sex, Aspirin, Smoking, Statin, Diabetes etc also contribute a smaller amount of importance. 
+
+
+```{r}
+featuresToTest <- correlationDf %>%
+  as.data.frame %>%
+  dplyr::select(-starts_with("PC")) %>%
+  as.matrix
+
+control <- trainControl(method="repeatedcv", number=10, repeats=3)
+# train the model
+model <- train(Mechanism_Code~., data=featuresToTest,  preProcess="scale", trControl=control)
+# estimate variable importance
+importance <- varImp(model, scale=FALSE)
+# summarize importance
+print(importance)
+# plot importance
+plot(importance)
+```
+
+
+## Proteins with High Expression
+
+- I have gone through each sample and selected the top 10 most abundant proteins detected in each sample. A table is shown below, showing some of these proteins. `n` corresponds to how many samples have that protein as one of their top 10 most abundant proteins. 
+
+```{r}
+topExpressedProteins <- dge$norm %>%
+  melt() %>%
+  dplyr::group_by(Var2) %>%
+  dplyr::arrange(desc(value), .by_group = TRUE) %>%
+  dplyr::slice_max(order_by = value, n = 10) %>% 
+  inner_join(dge$genes, by = c("Var1"="UniProt_ID")) %>%
+  dplyr::group_by(Var1) %>%
+  dplyr::mutate(dupl = n() > 1)%>% 
+  dplyr::filter(dupl == TRUE) %>%
+  dplyr::select(Var1, Var2, value, Protein_IDs, dupl)
+
+topExpressedProteins2 <- topExpressedProteins %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::arrange(desc(n)) %>% 
+  dplyr::rename(UniProt_ID = Var1) %>%
+  left_join(dge$genes[,c("UniProt_ID", "Gene")]) %>%
+  dplyr::select(UniProt_ID, Gene, n)
+
+topExpressedProteins2
+
+```
+
+### Heatmap visualisation
+
+- A heatmap is used to visualise relative abundances of the most abundant proteins, along with relevant metadata variables. 
+
+```{r fig.width=15, fig.height=20}
+# Create an annotation data.frame for the heatmap
+# annot_cols <- dge$samples %>%
+#   rownames_to_column("sample") %>%
+#   dplyr::select(sample, Age, Sex, Mechanism_Code) %>%
+#   column_to_rownames("sample")
+
+annot_cols <- importantFeatures <- dge$samples %>%
+  rownames_to_column("sample") %>%
+  dplyr::select_("sample", 
+                 "lib.size",
+                "Age",
+                "Sex",
+                "Mechanism_Code",
+                "Athero", 
+                "Smoking",
+                "HTN",
+                "AF", 
+                "Hyperlipidaemia", 
+                "Diabetes",
+                "Prev_dx_of_stroke",
+                "Prev_dx_of_TIA",
+                "CHF", 
+                "IHD",
+                "Aspirin",
+                "Clopidogrel",
+                "Dipyridamole", 
+                "Warfarin",
+                "Other_antithrombotic", 
+                "Statin", 
+                "Suspended_Anticoagulant", 
+                "B_BG", 
+                "HbA1c_mmolL",
+                "Cholesterol_1224hr",
+                "Red_Cell_Count", 
+                "White_Cell_Count", 
+                "Platelet_Count", 
+                "Neutrophil_Count", 
+                "Thrombolysis", 
+                "Total_Passes", 
+                "Reocclusion"
+                ) %>%
+  dplyr::rename(Total_Protein_Abundance = lib.size) %>%
+  column_to_rownames("sample") %>%
+    select_if(~ !any(is.na(.))) %>%
+  dplyr::select(-Dipyridamole, -Warfarin)
+
+annot_colours <- list(
+  Smoking = c("0" = "#dddddd", "1" = "orange", "2" = "red"),
+  Other_antithrombotic = c("0" = "#dddddd", "1" = "orange", "2" = "red"),
+  Clopidogrel = c("0" = "#dddddd", "1" = "red"),
+  Aspirin = c("0" = "#dddddd", "1" = "red"),
+  IHD = c("0" = "#dddddd", "1" = "red"),
+  CHF = c("0" = "#dddddd", "1" = "red"),
+  Diabetes = c("0" = "#dddddd", "1" = "red"),
+  HTN = c("0" = "#dddddd", "1" = "red"),
+  Hyperlipidaemia = c("0" = "#dddddd", "1" = "red"),
+  Thrombolysis = c("0" = "#dddddd", "1" = "red"),
+  Statin = c("0" = "#dddddd", "1" = "red"),
+  Mechanism_Code = c("0" = "Magenta",
+                     "1" = "MediumPurple",
+                     "2" = "turquoise",
+                     "3" = "yellow",
+                     "4" = "firebrick", 
+                     "5" = "YellowGreen"),
+  Sex = c("M" = "royalblue", "F" = "salmon")
+)
+  
+
+dataForHeatmap <- dge$norm %>% 
+  as.data.frame %>% 
+  rownames_to_column("UniProt_ID") %>%
+  dplyr::filter(UniProt_ID %in% topExpressedProteins2$UniProt_ID) %>% 
+  left_join(topExpressedProteins2[, c("UniProt_ID", "Gene")]) %>% 
+  dplyr::mutate(Gene = paste0(Gene, " (", UniProt_ID, ")")) %>%
+  dplyr::select(-UniProt_ID) %>%
+  column_to_rownames("Gene") 
+
+topAbundantProteinHeatmap <- dataForHeatmap %>%
+  pheatmap::pheatmap(scale="row", cellwidth = 10, cellheight=10,
+                     color = colorRampPalette(c("#10c1e5", 
+                                                "#82e0b4",
+                                                "#F9F9F9",
+                                                "#FBB829",
+                                                "#FF0066"))(100),
+                     annotation_colors = annot_colours,
+                     annotation_col = annot_cols, 
+                     border_color = "white",
+                     treeheight_row = 0)
+topAbundantProteinHeatmap
+
+#save_pheatmap_pdf(topAbundantProteinHeatmap, 
+ #                 filename = here("output", "abundant_protein_heatmap.pdf"), width = 16, height = 20)
+```
+
+## Highly Variable Proteins
+
+- Here, I define Highly Variable proteins as those which are in the top 25% percentile of proteins showing the highest standard deviation across all samples and also are expressed at an abundance in the top 50% percentile of proteins. 
+
+```{r fig.width=16, fig.height=60}
+variableProteins <- genefilter::rowSds(dge$norm) > quantile(genefilter::rowSds(dge$norm), 0.75)
+table(variableProteins)
+abundantProteins <- rowSums(dge$norm) > quantile(rowSums(dge$norm), 0.5)
+table(abundantProteins)
+table(variableProteins & abundantProteins)
+
+variableHeatmap <- dge$norm[(variableProteins & abundantProteins),] %>%
+  as.data.frame %>%
+  rownames_to_column("UniProt_ID") %>%
+  dplyr::left_join(dge$genes[, c("UniProt_ID", "Gene")]) %>%
+  dplyr::mutate(Gene = paste0(Gene, " (", UniProt_ID, ")")) %>%
+  dplyr::select(-UniProt_ID) %>%
+  column_to_rownames("Gene") %>%
+  pheatmap::pheatmap(scale="row", 
+                     cellwidth = 10, cellheight=10,
+                     color = colorRampPalette(c("#10c1e5", 
+                                                "#82e0b4",
+                                                "#F9F9F9",
+                                                "#FBB829",
+                                                "#FF0066"))(100),
+                     annotation_colors = annot_colours,
+                     annotation_col = annot_cols, 
+                     border_color = "white",
+                     treeheight_row = 0)
+
+variableHeatmap
+
+#save_pheatmap_pdf(variableHeatmap, 
+#                  filename = here("output", "variable_protein_heatmap.pdf"), width = 16, height = 60)
+```
+
+
+```{r}
+topExpressedProteins <- dge$norm %>%
+  melt() %>%
+  dplyr::group_by(Var2) %>%
+  dplyr::arrange(desc(value), .by_group = TRUE) %>%
+  dplyr::slice_max(order_by = value, n = 10) %>% 
+  inner_join(dge$genes, by = c("Var1"="UniProt_ID")) %>%
+  dplyr::group_by(Var1) %>%
+  dplyr::mutate(dupl = n() > 1)%>% 
+  dplyr::filter(dupl == TRUE) %>%
+  dplyr::select(Var1, Var2, value, Protein_IDs, dupl)
+
+topExpressedProteins2 <- topExpressedProteins %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::arrange(desc(n)) %>% 
+  dplyr::rename(UniProt_ID = Var1) %>%
+  left_join(dge$genes[,c("UniProt_ID", "Gene")]) %>%
+  dplyr::select(UniProt_ID, Gene, n)
+
+topExpressedProteins2
+
+```
+
+## Next steps
+
+- Unfortunately, the story that the data tells us is that the majority of variation seen in protein abundances between samples cannot be explained by the vast majority of the metadata variables that were measured for the samples. Possible reasons for this may include:
+
+1. **Technical artifacts or "batch effects" in samples**: Blood clot samples were not all taken on the same day, and their protein abundances were measured on different days. This can cause a technical batch effect where differences in storage time / wet-lab differences etc could contribute to the majority of variation we are seeing. Because the date at which protein abundances and other metadata variables were measured is not available, we cannot try to correct for this batch effect statistically (e.g. through modelling it as a fixed effect in a linear model). For all future samples which are collected, it is important that we include the dates / batches of when they were processed / measured. 
+
+2. **Possible insufficient sample size**: There are 70 samples representing 5 different types of blood clots. Some of the types of blood clot do not have many samples and this may not be representative of the protein abundances. A greater sample size would likely be very helpful in seeing how strong the true biological effect is vs. technical artifacts. 
+
+3. **Missing and incorrectly coded data in sample metadata**: Some of the sample metadata is incomplete (missing values) or incorrectly/inconsistently coded. 

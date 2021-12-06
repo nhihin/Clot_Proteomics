@@ -1,0 +1,382 @@
+---
+title: "Data import and cleaning"
+author: "Nhi Hin"
+date: "2021-05-07"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+```{r include=FALSE}
+# Basics
+library(here)
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(tibble)
+library(tidyr)
+library(readr)
+
+# Analysis
+library(edgeR)
+library(limma)
+library(org.Hs.eg.db)
+library(caret)
+library(mlbench)
+
+# Visualisation
+library(cowplot)
+library(pheatmap)
+library(umap)
+library(grid)
+theme_set(theme_bw())
+
+save_pheatmap_pdf <- function(x, filename, width=8, height=11) {
+   stopifnot(!missing(x))
+   stopifnot(!missing(filename))
+   pdf(filename, width=width, height=height)
+   grid::grid.newpage()
+   grid::grid.draw(x$gtable)
+   dev.off()
+}
+```
+
+
+## Summary
+
+- In this RMarkdown, the protein quantification data and sample metadata are imported, and we do some data cleaning and filtering to prepare it for analysis. 
+
+### Protein Abundances
+
+- The protein quantification data is stored in the tab delimited text file `proteinGroups.txt` as specified below. The sample metadata table is in two Excel spreadsheets `27052020-TOTO-All-Clots-Sample-table.xls` and `First 70 clots data for SAHMRI.xlsx` (I converted this to a CSV for easier importing with `readr`). A copy of these files has been stored in the `data` directory and their paths are specified below. 
+
+```{r}
+# Protein data location
+input <- here("data","proteinGroups.txt")
+
+# Sample data location
+samples <- here("data","27052020-TOTO-All-Clots-Sample-table.xls")
+samples2 <- here("data", "First 70 clots data for SAHMRI.xlsx")
+samples2_csv <- here("data", "First 70 clots data for SAHMRI.csv")
+```
+
+- The protein quantification data is imported and relevant columns are retained as follows. 
+
+```{r}
+# Protein quantification data:
+dat <- readr::read_delim(input, delim = "\t", col_names = TRUE)
+
+cleanDat <- dat %>%
+  tibble::rownames_to_column(var = "ProteinNum") %>%
+  dplyr::mutate(ProteinNum = gsub("^", "Protein_", ProteinNum)) %>%
+  dplyr::select(ProteinNum, `Protein IDs`, `Majority protein IDs`, `Peptide counts (all)`, `Number of proteins`, `Peptides`, 
+                `Unique peptides`, `Sequence coverage [%]`, `Unique sequence coverage [%]`, `Mol. weight [kDa]`,
+                `Sequence length`, `Sequence lengths`, `Q-value`, Score, `Only identified by site`, Reverse, 
+                `Potential contaminant`, id, `Peptide IDs`, `Peptide is razor`, `Mod. peptide IDs`, 
+                `Evidence IDs`, `MS/MS IDs`, `Best MS/MS`, `Deamidation (NQ) site IDs`, `Oxidation (M) site IDs`, 
+                `Deamidation (NQ) site positions`, `Oxidation (M) site positions`, `Taxonomy IDs`, contains("LFQ"))
+
+colnames(cleanDat) <- gsub("^LFQ intensity (Batch[12]-.+)_Slot.+$", "\\1", colnames(cleanDat))
+
+cleanDat
+```
+
+- Because `cleanDat` contains both protein annotation info and protein quantification, we will split these into two separate data.frames so that the data processing is more straightforward later on. 
+
+```{r}
+# Get protein quantification into an intensity matrix:
+mat <- cleanDat %>%
+  dplyr::select(starts_with("Batch")) %>%
+  as.data.frame()
+
+rownames(mat) <- gsub("^", "Protein_", rownames(mat))
+
+dim(mat)
+```
+
+### Protein Annotation
+
+- The protein annotation info is extracted from `cleanDat` as follows:
+
+```{r}
+proteins <- cleanDat %>%
+  as.data.frame %>%
+  set_rownames(.$ProteinNum) %>%
+  dplyr::select(-starts_with("Batch")) %>%
+  set_colnames(gsub(x = colnames(.), pattern = " ", replacement = "_")) %>%
+  tidyr::separate_rows(Majority_protein_IDs, sep = ";")
+
+head(proteins$Majority_protein_IDs, 20)
+
+```
+
+- This gives `r nrow(proteins)` proteins which have been quantified. 
+
+- However, the IDs of the proteins is not in an ideal format. There are proteins with human UniProt identifiers (e.g. `P02768` corresponding to the ALBU gene). Despite this, a number of other UniProt identifiers appear to be from other species including *Sus scrofa* and *Bos taurus*. I am not sure about the reasons for this, although it could be related to the homology mapping used in the initial pre-processing of the data (which I do not have any info about currently). 
+
+- Because of this, I am going to try to extract out all proteins that have clearly identifiable human UniProt IDs first. These appear to be defined in the dataset as proteins which end with `HUMAN` in the `Majority_protein_IDs` column. Then we will decide what to do with the other ones. 
+
+```{r}
+# Retrieve list of human Uniprot identifiers
+entrez2Uniprot <- org.Hs.egUNIPROT %>% 
+  as.data.frame
+
+human_proteins <- proteins %>%
+  dplyr::filter(grepl("HUMAN",Majority_protein_IDs)) 
+nrow(human_proteins)
+
+other_proteins <- proteins %>%
+  dplyr::filter(!grepl("HUMAN",Majority_protein_IDs)) 
+nrow(other_proteins)
+```
+
+- It turns out that the vast majority of proteins in the dataset are human (`r nrow(human_proteins)` proteins) and only `r nrow(other_proteins)` proteins belong to other species. Because this is such a small amount (`r nrow(other_proteins)/nrow(proteins)*100`% of the dataset), it seems reasonable to just filter those out of the dataset for now. 
+
+```{r}
+
+proteins %<>%
+  dplyr::filter(grepl("HUMAN",Majority_protein_IDs)) %>% 
+  tidyr::separate(col = Majority_protein_IDs, into = c("sp", "UniProt_ID", "Gene"), sep = "\\|") %>% 
+  dplyr::mutate(Gene = gsub(x = Gene, pattern = "_HUMAN", replacement = "")) %>% 
+  as.data.frame %>%
+  dplyr::distinct(UniProt_ID, .keep_all = TRUE) %>%
+  set_rownames(.$UniProt_ID)
+  #tidyr::separate_rows(Protein_IDs, sep = ";") %>% View
+
+# proteins %<>%
+#   dplyr::filter(grepl("HUMAN",Majority_protein_IDs)) %>%
+#   tidyr::separate_rows(Majority_protein_IDs, sep = "\\|") %>% 
+#   dplyr::filter(!grepl("HUMAN",Majority_protein_IDs),
+#                 !grepl("sp", Majority_protein_IDs)) %>%
+#   dplyr::distinct(Majority_protein_IDs,.keep_all=TRUE) %>%
+#   as.data.frame %>%
+#   set_rownames(.$Majority_protein_IDs)
+
+nrow(proteins)
+```
+
+- Because we have done a small amount of filtering on these protein IDs, we need to ensure that the protein intensity matrix contains the same proteins. 
+
+```{r}
+mat %<>% as.data.frame %>%
+  rownames_to_column("ProteinNum") %>%
+  left_join(proteins[, c("ProteinNum", "UniProt_ID")]) %>%
+  dplyr::filter(!is.na(UniProt_ID)) %>%
+  dplyr::select(-ProteinNum) %>%
+  column_to_rownames("UniProt_ID") 
+
+# Quick sanity check: OK.
+table(rownames(mat) == rownames(proteins))
+```
+
+
+
+### Sample Metadata
+
+- We then import the sample metadata tables and consolidate them into a single data.frame. 
+
+```{r}
+# Sample metadata import
+sampleInfo <- readxl::read_xls(samples) %>%
+  as.data.frame() %>% 
+  tibble::rownames_to_column(var = "order") %>%
+  dplyr::select(order, Vial, `Sample ID`) %>%
+  dplyr::mutate(`Sample ID` = gsub("^TOTO-", "", `Sample ID`)) %>%
+  dplyr::mutate(Sample = gsub(x = `Sample ID`, pattern = "^Batch[[:digit:]]-Clot-([[:digit:]]{1,2})", replacement = "\\1")) %>%
+  dplyr::mutate(Sample = case_when(!Sample %in% 1:100 ~ "remove",
+                                   TRUE ~ Sample)) %>%
+  dplyr::filter(!Sample == "remove")
+
+# Consolidate sample metadata into 1 data.frame
+sampleMetadata <- readr::read_csv(samples2_csv) %>%
+  as.data.frame %>%
+  set_colnames(gsub(x = colnames(.), pattern = " ", replacement = "_")) %>%
+  set_colnames(gsub(x = colnames(.), pattern = "-|/|\\?", replacement = "")) %>%
+  dplyr::rename(Sample = Clot_No) %>%
+  dplyr::mutate(Sample = as.character(Sample)) %>%
+  left_join(sampleInfo, by = "Sample")
+
+# few extra modifications to the metadata
+sampleMetadata %<>%
+  dplyr::mutate(Onset_Year = gsub(x = as.character(Onset_Date),
+                                  pattern = "^(.*)\\/(18|19)$", 
+                                  replacement = "\\2")) %>%
+  dplyr::mutate(Sex = as.factor(Sex),
+                Mechanism_Code = as.factor(Mechanism_Code),
+                LAA = as.factor(LAA),
+                CAembolism = as.factor(CAembolism),
+                SV_occlusion = as.factor(SV_occlusion),
+                Other_Uncommon = as.factor(Other_Uncommon),
+                Unknown_Incomplete = as.factor(Unknown_Incomplete),
+                Athero = as.factor(Athero),
+                Smoking = as.factor(Smoking),
+                HTN = as.factor(HTN),
+                AF = as.factor(AF),
+                Hyperlipidaemia = as.factor(Hyperlipidaemia),
+                Diabetes = as.factor(Diabetes),
+                Prev_dx_of_stroke = as.factor(Prev_dx_of_stroke),
+                Prev_dx_of_TIA = as.factor(Prev_dx_of_TIA),
+                CHF = as.factor(CHF),
+                IHD = as.factor(IHD),
+                Aspirin = as.factor(Aspirin),
+                Clopidogrel = as.factor(Clopidogrel),
+                Dipyridamole = as.factor(Dipyridamole),
+                Warfarin = as.factor(Warfarin),
+                Other_antithrombotic = as.factor(Other_antithrombotic),
+                Statin = as.factor(Statin),
+                Suspended_Anticoagulant = as.factor(Suspended_Anticoagulant),
+                mRS = as.factor(mRS),
+                Thrombolysis = as.factor(Thrombolysis),
+                Haemorrhage = as.factor(Haemorrhage),
+                Type_of_Haemorrhage = as.factor(Type_of_Haemorrhage)
+                )
+  
+
+
+
+```
+```{r old_code_1, include=FALSE, eval=FALSE}
+# Old code:
+# sampleMetadata <- readxl::read_xlsx(samples2, 
+#                                     col_types = c("numeric",
+#                                                   "text",
+#                                                   "date",
+#                                                   "text",
+#                                                   "text",
+#                                                   "date",
+#                                                   "text", 
+#                                                   "text",
+#                                                   "date",
+#                                                   "text",
+#                                                   "text",
+#                                                   "numeric", rep("guess", 52))) %>%
+#   as.data.frame %>%
+#   set_colnames(gsub(x = colnames(.), pattern = " ", replacement = "_")) %>%
+#   dplyr::rename(Sample = Clot_No) %>%
+#   dplyr::mutate(Sample = as.character(Sample)) %>%
+#   left_join(sampleInfo, by = "Sample")
+```
+
+### Quick Exploration
+
+
+```{r}
+sampleMetadata %>% 
+  ggplot(aes(x = Sex, fill = Mechanism_Code)) +
+  geom_bar() +
+  labs(y = "Count") +
+  ggtitle("Types of blood clots by sex")
+```
+
+```{r}
+sampleMetadata %>% 
+  ggplot(aes(x = Age, fill = Mechanism_Code)) +
+  geom_histogram(bins = 20, alpha=0.6) +
+  facet_wrap(~Mechanism_Code)  +
+  ggtitle("Age distributions of different types of blood clots")
+```
+
+```{r}
+sampleMetadata %>% 
+  ggplot(aes(y = Age, x=Sex, fill = Sex)) +
+  geom_boxplot() +
+  #geom_histogram(bins = 25, alpha=0.6) +
+  ggtitle("Age distributions of male and female patients")
+```
+
+
+
+## Data Normalisation
+
+- To simplify working with the data, including normalisation, filtering, etc we will store all the data in a `DGEList` (digital gene expression) object. This object is designed for gene expression data originally, but it works well for proteomics datasets as well and provides helpful functions for normalisation, filtering, etc. 
+
+- In previous work, I have found the Cyclic Loess method to work well for normalising proteomics data. The method also performed well in a recent comparison of normalisation methods for both TMT and label-free proteomics ([Graw et al. 2020](https://pubs.acs.org/doi/10.1021/acsomega.0c02564)). 
+
+- Cyclic Loess is implemented in *limma*, so we can perform the normalisation as follows. Prior to normalisation, I also removed all proteins that had zero abundance across all samples, corresponding to 89 proteins removed. 
+
+```{r}
+dge <- DGEList(counts = mat,
+               genes = proteins,
+               samples = sampleMetadata, 
+               remove.zeros = TRUE) %>%
+  calcNormFactors() #Calculate "library size" or total protein abundance for each sample
+
+# Normalise data and store this in the $norm slot of the DGEList
+dge$norm <- dge$counts %>%
+  add(0.25) %>% # Offset to prevent Inf from showing up when we apply log2
+  log2 %>%
+  limma::normalizeBetweenArrays(method = "cyclicloess", 
+                                cyclic.method = "fast") 
+```
+
+
+### Boxplot comparison
+
+- A comparison of before and after normalisation is shown below. We can see that after the Cyclic Loess normalisation, the distributions of protein intensities across each sample are more comparable to each other, although there is still quite a bit of variation in several samples. 
+
+```{r fig.width=11}
+dge$counts %>%
+  add(0.25) %>%
+  log2 %>%
+  melt() %>% 
+  set_colnames(c("uniProtID", "Sample", "log2_intensity")) %>%
+  ggplot(aes(x = Sample, y = log2_intensity, fill = Sample)) +
+  geom_boxplot(show.legend = FALSE) +
+  ggtitle("Raw log2 intensities")
+
+dge$norm %>% 
+  melt() %>% 
+  set_colnames(c("uniProtID", "Sample", "log2_intensity")) %>%
+  ggplot(aes(x = Sample, y = log2_intensity, fill = Sample)) +
+  geom_boxplot(show.legend = FALSE) +
+  ggtitle("After Cyclic Loess Normalisation")
+
+```
+
+## Filtering
+
+- From the boxplots above, there are a number of proteins that appear to have very low abundance (log2 intensity < 0). It is also worth doing a small amount of filtering based on the normalised protein abundances. 
+
+```{r}
+# Arbitrary cutoff to remove low abundance proteins
+keepTheseProteins <- (rowSums((dge$counts) > 0.5) >= 3) 
+
+A <- dge$counts %>% 
+  add(0.25) %>%
+  log2 %>%
+  melt %>% 
+  dplyr::filter(is.finite(value)) %>% 
+  ggplot(aes(x = value, colour = Var2)) +
+  geom_density() + 
+  guides(colour = FALSE) +
+  ggtitle("A. Before filtering") +
+  labs(x = "logCPM", y = "Density")
+
+B <- dge$norm %>% 
+  magrittr::extract(keepTheseProteins,) %>%
+  melt %>% 
+  dplyr::filter(is.finite(value)) %>% 
+  ggplot(aes(x = value, colour = Var2)) +
+  geom_density() + 
+  guides(colour = FALSE) +
+  ggtitle("B. After filtering")+
+  labs(x = "logCPM", y = "Density")
+
+
+grid.newpage()
+vp1 <- viewport(x = 0, y = 0, width = 0.5, height = 1, just = c(0, 0))
+vp2 <- viewport(x = 0.5, y = 0, width = 0.5, height = 1, just = c(0,0))
+print(A, vp = vp1)
+print(B, vp  = vp2)
+dge <- dge[keepTheseProteins,,keep.lib.sizes = FALSE] 
+```
+
+## Save R Objects
+
+- Now that the data is in a suitable format for analysis, we will save it out as an R object to be imported in the next step of the analysis, [basic data exploration](explore.html).
+
+```{r eval=FALSE}
+dge %>% saveRDS(here("data", "dge.rds"))
+```
+
