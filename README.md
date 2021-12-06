@@ -1,5 +1,3 @@
-# Tom_Proteomics
+# Blood clot proteomics exploratory analysis
 
-A [workflowr][] project.
-
-[workflowr]: https://github.com/jdblischak/workflowr
+- For analysis RMarkdowns, see: nhihin.com/clot_proteomics/
